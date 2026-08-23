@@ -92,6 +92,10 @@ button:hover,
   gap: 12px;
 }
 
+.topbar {
+  flex-wrap: wrap;
+}
+
 .eyebrow,
 .track-meta,
 .status,
@@ -131,6 +135,11 @@ h2 {
 .primary-action {
   border-color: rgba(47, 230, 200, 0.45);
   background: linear-gradient(135deg, rgba(47, 230, 200, 0.24), rgba(93, 140, 255, 0.18)), var(--panel-strong);
+}
+
+.ghost-action {
+  border-color: rgba(245, 242, 236, 0.16);
+  background: rgba(255, 255, 255, 0.035);
 }
 
 .file-button input {
@@ -199,6 +208,28 @@ h2 {
   font-size: 12px;
   font-weight: 700;
   padding: 7px 9px;
+}
+
+.drop-zone {
+  display: grid;
+  gap: 4px;
+  border: 1px dashed rgba(47, 230, 200, 0.28);
+  border-radius: 8px;
+  background: rgba(47, 230, 200, 0.045);
+  color: var(--text);
+  padding: 16px;
+  transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
+}
+
+.drop-zone span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.drop-zone.is-active {
+  border-color: rgba(47, 230, 200, 0.86);
+  background: rgba(47, 230, 200, 0.11);
+  transform: translateY(-1px);
 }
 
 audio {

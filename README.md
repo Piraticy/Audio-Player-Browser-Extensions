@@ -60,7 +60,10 @@ The container verifies the Python app, browser-extension JavaScript, manifest JS
 The Docker container serves a browser app on port `8091`.
 
 - Play selected local audio files in the browser
+- Add files with a picker or drag-and-drop
+- Generate a built-in demo track for quick testing
 - Skip backward or forward by 10 or 20 seconds
+- Use keyboard shortcuts: Space, ArrowLeft, ArrowRight, `N`, and `P`
 - Pick visualizer modes: bars, wave, halo, or off
 - Convert selected local or authorized media files through FFmpeg in Docker
 - Export MP3 by default at 320 kbps

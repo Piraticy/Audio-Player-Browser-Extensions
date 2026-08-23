@@ -18,6 +18,7 @@
             <input id="fileInput" type="file" accept="audio/*,video/*" multiple>
             Add files
           </label>
+          <button id="demoButton" class="ghost-action" type="button">Try demo</button>
         </header>
 
         <section class="now-playing">
@@ -33,6 +34,11 @@
               <span>Local files</span>
             </div>
           </div>
+        </section>
+
+        <section id="dropZone" class="drop-zone">
+          <strong>Drop audio or video files here</strong>
+          <span>Local playback starts instantly. Conversion stays in Docker.</span>
         </section>
 
         <section class="visualizer-panel" aria-label="Audio visualizer">

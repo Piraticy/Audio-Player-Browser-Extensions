@@ -1,7 +1,10 @@
 const fileInput = document.getElementById("fileInput");
 const audio = document.getElementById("audio");
+const playerPanel = document.querySelector(".player-panel");
 const trackName = document.getElementById("trackName");
 const trackMeta = document.getElementById("trackMeta");
+const demoButton = document.getElementById("demoButton");
+const dropZone = document.getElementById("dropZone");
 const previousButton = document.getElementById("previousButton");
 const playButton = document.getElementById("playButton");
 const nextButton = document.getElementById("nextButton");
@@ -41,15 +44,29 @@ renderSavedSearches();
 drawIdleVisualizer();
 
 fileInput.addEventListener("change", () => {
-  const files = [...fileInput.files];
-  playlist.push(...files);
-  renderPlaylist();
-
-  if (activeIndex === -1 && playlist.length) {
-    playTrack(0);
-  }
-
+  addFiles([...fileInput.files]);
   fileInput.value = "";
+});
+
+demoButton.addEventListener("click", () => {
+  addFiles([createDemoTrack()]);
+});
+
+["dragenter", "dragover"].forEach((eventName) => {
+  playerPanel.addEventListener(eventName, (event) => {
+    event.preventDefault();
+    dropZone.classList.add("is-active");
+  });
+});
+
+["dragleave", "drop"].forEach((eventName) => {
+  playerPanel.addEventListener(eventName, (event) => {
+    event.preventDefault();
+    if (eventName === "drop") {
+      addFiles([...event.dataTransfer.files]);
+    }
+    dropZone.classList.remove("is-active");
+  });
 });
 
 previousButton.addEventListener("click", () => {
@@ -143,6 +160,25 @@ audio.addEventListener("ended", () => {
     playTrack((activeIndex + 1) % playlist.length);
   }
 });
+document.addEventListener("keydown", handleKeyboardShortcuts);
+
+function addFiles(files) {
+  const mediaFiles = files.filter((file) => file.type.startsWith("audio/") || file.type.startsWith("video/"));
+
+  if (!mediaFiles.length) {
+    setStatus("Add audio or video files.");
+    return;
+  }
+
+  playlist.push(...mediaFiles);
+  renderPlaylist();
+
+  if (activeIndex === -1 && playlist.length) {
+    playTrack(0);
+  } else {
+    setStatus(`Added ${mediaFiles.length} file(s).`);
+  }
+}
 
 function playTrack(index) {
   const file = playlist[index];
@@ -162,6 +198,28 @@ function playTrack(index) {
   updateTrackCopy(file);
   renderPlaylist();
   setStatus(`Playing ${file.name}`);
+}
+
+function handleKeyboardShortcuts(event) {
+  const tagName = event.target?.tagName?.toLowerCase();
+  if (tagName === "input" || tagName === "select" || tagName === "textarea") {
+    return;
+  }
+
+  if (event.code === "Space") {
+    event.preventDefault();
+    playButton.click();
+  } else if (event.key === "ArrowLeft") {
+    event.preventDefault();
+    seekBy(event.shiftKey ? -20 : -10);
+  } else if (event.key === "ArrowRight") {
+    event.preventDefault();
+    seekBy(event.shiftKey ? 20 : 10);
+  } else if (event.key.toLowerCase() === "n") {
+    nextButton.click();
+  } else if (event.key.toLowerCase() === "p") {
+    previousButton.click();
+  }
 }
 
 function seekBy(seconds) {
@@ -476,4 +534,53 @@ function downloadBlob(blob, filename) {
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
+}
+
+function createDemoTrack() {
+  const sampleRate = 44100;
+  const duration = 8;
+  const sampleCount = sampleRate * duration;
+  const samples = new Float32Array(sampleCount);
+
+  for (let index = 0; index < sampleCount; index += 1) {
+    const time = index / sampleRate;
+    const envelope = Math.min(1, time * 2, (duration - time) * 2);
+    const bass = Math.sin(Math.PI * 2 * 110 * time) * 0.24;
+    const lead = Math.sin(Math.PI * 2 * (220 + Math.sin(time * 3) * 24) * time) * 0.18;
+    const shimmer = Math.sin(Math.PI * 2 * 660 * time) * 0.04;
+    samples[index] = (bass + lead + shimmer) * envelope;
+  }
+
+  return new File([encodeWav(samples, sampleRate)], "audio-player-demo.wav", { type: "audio/wav" });
+}
+
+function encodeWav(samples, sampleRate) {
+  const buffer = new ArrayBuffer(44 + samples.length * 2);
+  const view = new DataView(buffer);
+  writeText(view, 0, "RIFF");
+  view.setUint32(4, 36 + samples.length * 2, true);
+  writeText(view, 8, "WAVE");
+  writeText(view, 12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  writeText(view, 36, "data");
+  view.setUint32(40, samples.length * 2, true);
+
+  samples.forEach((sample, index) => {
+    const value = clamp(sample, -1, 1);
+    view.setInt16(44 + index * 2, value < 0 ? value * 0x8000 : value * 0x7fff, true);
+  });
+
+  return buffer;
+}
+
+function writeText(view, offset, text) {
+  [...text].forEach((character, index) => {
+    view.setUint8(offset + index, character.charCodeAt(0));
+  });
 }

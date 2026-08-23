@@ -78,6 +78,12 @@ def check_web_app_files() -> None:
     if missing:
         raise AssertionError(f"Missing web app files: {', '.join(missing)}")
 
+    html = (ROOT / "web" / "static" / "index.html").read_text(encoding="utf-8")
+    required_text = ["Try demo", "Drop audio or video files here", "-20s", "+20s", "Motion Studio"]
+    missing_text = [text for text in required_text if text not in html]
+    if missing_text:
+        raise AssertionError(f"Missing web app UI text: {', '.join(missing_text)}")
+
     run(["python3", "-m", "py_compile", "web/server.py"])
 
 
