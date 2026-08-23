@@ -25,6 +25,7 @@ const mediaLinkForm = document.getElementById("mediaLinkForm");
 const mediaLinkInput = document.getElementById("mediaLinkInput");
 const cloneLinkButton = document.getElementById("cloneLinkButton");
 const linkStatus = document.getElementById("linkStatus");
+const streamPresets = document.getElementById("streamPresets");
 const saveSearchButton = document.getElementById("saveSearchButton");
 const rememberSearches = document.getElementById("rememberSearches");
 const suggestionsElement = document.getElementById("suggestions");
@@ -162,6 +163,15 @@ mediaLinkForm.addEventListener("submit", (event) => {
   playMediaLink();
 });
 cloneLinkButton.addEventListener("click", cloneMediaLink);
+streamPresets.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-stream-url]");
+  if (!button) {
+    return;
+  }
+
+  mediaLinkInput.value = button.dataset.streamUrl;
+  playMediaLink();
+});
 
 audio.addEventListener("play", () => {
   playButton.textContent = "Pause";

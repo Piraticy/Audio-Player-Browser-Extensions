@@ -102,11 +102,15 @@
             <h2>Streams</h2>
           </div>
           <form id="mediaLinkForm" class="search-form">
-            <input id="mediaLinkInput" type="url" placeholder="https://example.com/live.mp3 or station.pls">
+            <input id="mediaLinkInput" type="url" placeholder="Paste stream URL">
             <button type="submit">Play stream</button>
           </form>
+          <div id="streamPresets" class="stream-presets" aria-label="Stream presets">
+            <button type="button" data-stream-url="https://somafm.com/groovesalad.pls">Groove Salad</button>
+            <button type="button" data-stream-url="https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3">MP3 sample</button>
+          </div>
           <button id="cloneLinkButton" type="button">Clone file link</button>
-          <p id="linkStatus" class="fine-print">Play direct streams, radio playlists, podcasts, and authorized media links.</p>
+          <p id="linkStatus" class="fine-print">Use Play stream for direct MP3/AAC streams, podcasts, or .m3u/.pls radio playlists.</p>
         </section>
 
         <section class="playlist-card">

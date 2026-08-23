@@ -337,14 +337,16 @@ input::placeholder {
 }
 
 .suggestions,
-.saved-searches {
+.saved-searches,
+.stream-presets {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
 .suggestions button,
-.saved-searches button {
+.saved-searches button,
+.stream-presets button {
   max-width: 100%;
   overflow: hidden;
   background: rgba(47, 230, 200, 0.07);
@@ -357,6 +359,11 @@ input::placeholder {
 
 .saved-searches button {
   background: rgba(93, 140, 255, 0.1);
+}
+
+.stream-presets button {
+  background: rgba(242, 193, 77, 0.1);
+  color: #fff0c5;
 }
 
 .playlist {

@@ -101,6 +101,8 @@ def check_web_app_files() -> None:
         "Online Streaming",
         "Play stream",
         "Clone file link",
+        "Groove Salad",
+        "MP3 sample",
         "/app.js?v=20260823-online-streams",
     ]
     missing_text = [text for text in required_text if text not in html]
@@ -109,6 +111,7 @@ def check_web_app_files() -> None:
     required_script_text = [
         "routeHostedMusicPage",
         "resolveOnlineStream",
+        "streamPresets",
         "isYouTubeUrl",
         "isAudiomackUrl",
         "isPlaylistStreamUrl",
