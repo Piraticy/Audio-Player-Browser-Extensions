@@ -89,6 +89,7 @@ def check_web_app_files() -> None:
         raise AssertionError(f"Missing web app files: {', '.join(missing)}")
 
     html = (ROOT / "web" / "static" / "index.html").read_text(encoding="utf-8")
+    app_js = (ROOT / "web" / "static" / "app.js").read_text(encoding="utf-8")
     required_text = [
         "Auralith",
         "Try demo",
@@ -104,6 +105,14 @@ def check_web_app_files() -> None:
     missing_text = [text for text in required_text if text not in html]
     if missing_text:
         raise AssertionError(f"Missing web app UI text: {', '.join(missing_text)}")
+    required_script_text = [
+        "routeStreamingLink",
+        "isYouTubeUrl",
+        "YouTube pages are not direct media files",
+    ]
+    missing_script_text = [text for text in required_script_text if text not in app_js]
+    if missing_script_text:
+        raise AssertionError(f"Missing web app link handling: {', '.join(missing_script_text)}")
 
     server_path = ROOT / "web" / "server.py"
     spec = importlib.util.spec_from_file_location("web_server", server_path)

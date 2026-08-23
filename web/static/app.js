@@ -175,6 +175,16 @@ audio.addEventListener("ended", () => {
     playTrack((activeIndex + 1) % playlist.length);
   }
 });
+audio.addEventListener("error", () => {
+  const track = playlist[activeIndex];
+  playButton.textContent = "Play";
+  if (isLinkTrack(track)) {
+    linkStatus.textContent = "This URL is not a playable direct media file.";
+    setStatus("Use a direct MP3, WAV, M4A, OGG, FLAC, or video file link.");
+  } else {
+    setStatus("This file could not be played by the browser.");
+  }
+});
 document.addEventListener("keydown", handleKeyboardShortcuts);
 
 function addFiles(files) {
@@ -226,25 +236,25 @@ function playTrack(index) {
 }
 
 function playMediaLink() {
-  const url = normalizedMediaLink();
-  if (!url) {
+  const url = mediaLinkUrl();
+  if (!url || routeStreamingLink(url)) {
     return;
   }
 
   const track = {
     kind: "link",
-    name: nameFromLink(url),
+    name: nameFromLink(url.href),
     type: "Direct media link",
     size: 0,
-    url
+    url: url.href
   };
   addPlayableFiles([track]);
   linkStatus.textContent = "Playing direct media link.";
 }
 
 async function cloneMediaLink() {
-  const url = normalizedMediaLink();
-  if (!url) {
+  const url = mediaLinkUrl();
+  if (!url || routeStreamingLink(url)) {
     return;
   }
 
@@ -255,7 +265,7 @@ async function cloneMediaLink() {
     const response = await fetch("/api/clone-link", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url })
+      body: JSON.stringify({ url: url.href })
     });
 
     if (!response.ok) {
@@ -265,7 +275,7 @@ async function cloneMediaLink() {
 
     const blob = await response.blob();
     const disposition = response.headers.get("Content-Disposition") || "";
-    const filename = getFilename(disposition) || nameFromLink(url);
+    const filename = getFilename(disposition) || nameFromLink(url.href);
     addFiles([new File([blob], filename, { type: blob.type || "application/octet-stream" })]);
     linkStatus.textContent = "Cloned media into the playlist.";
   } catch (error) {
@@ -275,7 +285,7 @@ async function cloneMediaLink() {
   }
 }
 
-function normalizedMediaLink() {
+function mediaLinkUrl() {
   const rawLink = mediaLinkInput.value.trim();
 
   try {
@@ -283,11 +293,23 @@ function normalizedMediaLink() {
     if (url.protocol !== "http:" && url.protocol !== "https:") {
       throw new Error("Unsupported protocol.");
     }
-    return url.toString();
+    return url;
   } catch {
     linkStatus.textContent = "Paste a valid http or https direct media link.";
-    return "";
+    return null;
   }
+}
+
+function routeStreamingLink(url) {
+  if (!isYouTubeUrl(url)) {
+    return false;
+  }
+
+  youtubeSearchInput.value = youtubeQueryFromUrl(url);
+  youtubeStatus.textContent = "YouTube links open on official YouTube.";
+  linkStatus.textContent = "YouTube pages are not direct media files, so they cannot play in Direct Media.";
+  window.open(url.href, "_blank", "noopener,noreferrer");
+  return true;
 }
 
 function handleKeyboardShortcuts(event) {
@@ -656,6 +678,19 @@ function nameFromLink(url) {
   } catch {
     return "linked-media";
   }
+}
+
+function isYouTubeUrl(url) {
+  const hostname = url.hostname.toLowerCase().replace(/^www\./, "");
+  return hostname === "youtube.com" || hostname === "m.youtube.com" || hostname === "youtu.be";
+}
+
+function youtubeQueryFromUrl(url) {
+  if (url.hostname.toLowerCase().replace(/^www\./, "") === "youtu.be") {
+    return url.pathname.split("/").filter(Boolean)[0] || url.href;
+  }
+
+  return url.searchParams.get("v") || url.searchParams.get("search_query") || url.href;
 }
 
 function clamp(value, min, max) {
