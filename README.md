@@ -1,2 +1,2 @@
 # Audio-Player-Browser-Extensions
-Music  Player, Extensions
+Music  Player app + Extensions for all Browsers
