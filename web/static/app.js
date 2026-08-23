@@ -179,8 +179,8 @@ audio.addEventListener("error", () => {
   const track = playlist[activeIndex];
   playButton.textContent = "Play";
   if (isLinkTrack(track)) {
-    linkStatus.textContent = "This URL is not a playable direct media file.";
-    setStatus("Use a direct MP3, WAV, M4A, OGG, FLAC, or video file link.");
+    linkStatus.textContent = "This URL is not playable in this browser. Try a direct MP3/AAC stream, podcast file, or another browser for HLS.";
+    setStatus("Online stream could not be played by the browser.");
   } else {
     setStatus("This file could not be played by the browser.");
   }
@@ -227,8 +227,8 @@ function playTrack(index) {
       removePlaylistTrack(index, "Removed an invalid link from the playlist.");
       return;
     }
-    if (routeStreamingLink(linkUrl)) {
-      removePlaylistTrack(index, "Removed YouTube watch page from the playlist.");
+    if (routeHostedMusicPage(linkUrl)) {
+      removePlaylistTrack(index, "Removed hosted music page from the playlist.");
       return;
     }
   }
@@ -247,26 +247,40 @@ function playTrack(index) {
   setStatus(`Playing ${track.name}`);
 }
 
-function playMediaLink() {
+async function playMediaLink() {
   const url = mediaLinkUrl();
-  if (!url || routeStreamingLink(url)) {
+  if (!url || routeHostedMusicPage(url)) {
     return;
   }
 
-  const track = {
-    kind: "link",
-    name: nameFromLink(url.href),
-    type: "Direct media link",
-    size: 0,
-    url: url.href
-  };
-  addPlayableFiles([track]);
-  linkStatus.textContent = "Playing direct media link.";
+  linkStatus.textContent = "Resolving online stream...";
+  mediaLinkForm.querySelector("button").disabled = true;
+
+  try {
+    const stream = await resolveOnlineStream(url.href);
+    const track = {
+      kind: "stream",
+      name: stream.name || nameFromLink(stream.stream_url),
+      type: stream.resolved ? "Resolved online stream" : "Online stream",
+      size: 0,
+      url: stream.stream_url
+    };
+    addPlayableFiles([track]);
+    linkStatus.textContent = stream.resolved ? "Resolved playlist and started stream." : "Playing online stream.";
+  } catch (error) {
+    linkStatus.textContent = error instanceof Error ? error.message : "Could not resolve this online stream.";
+  } finally {
+    mediaLinkForm.querySelector("button").disabled = false;
+  }
 }
 
 async function cloneMediaLink() {
   const url = mediaLinkUrl();
-  if (!url || routeStreamingLink(url)) {
+  if (!url || routeHostedMusicPage(url)) {
+    return;
+  }
+  if (isPlaylistStreamUrl(url)) {
+    linkStatus.textContent = "Use Play stream for playlist and HLS links. Clone is for downloadable media files.";
     return;
   }
 
@@ -289,7 +303,7 @@ async function cloneMediaLink() {
     const disposition = response.headers.get("Content-Disposition") || "";
     const filename = getFilename(disposition) || nameFromLink(url.href);
     addFiles([new File([blob], filename, { type: blob.type || "application/octet-stream" })]);
-    linkStatus.textContent = "Cloned media into the playlist.";
+    linkStatus.textContent = "Cloned downloadable media into the playlist.";
   } catch (error) {
     linkStatus.textContent = error instanceof Error ? error.message : "Could not clone this media link.";
   } finally {
@@ -309,14 +323,32 @@ function mediaLinkUrl() {
   return url;
 }
 
-function routeStreamingLink(url) {
-  if (!isYouTubeUrl(url)) {
+async function resolveOnlineStream(url) {
+  const response = await fetch("/api/resolve-stream", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url })
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || !payload.ok) {
+    throw new Error(payload.error || "Could not resolve this online stream.");
+  }
+
+  return payload;
+}
+
+function routeHostedMusicPage(url) {
+  if (!isHostedMusicPageUrl(url)) {
     return false;
   }
 
-  youtubeSearchInput.value = youtubeQueryFromUrl(url);
-  youtubeStatus.textContent = "YouTube links open on official YouTube.";
-  linkStatus.textContent = "YouTube pages are not direct media files, so they cannot play in Direct Media.";
+  if (isYouTubeUrl(url)) {
+    youtubeSearchInput.value = youtubeQueryFromUrl(url);
+    youtubeStatus.textContent = "YouTube links open on official YouTube.";
+  }
+
+  linkStatus.textContent = `${serviceNameFromUrl(url)} pages open in their official player. Paste a direct stream URL to play inside Auralith.`;
   window.open(url.href, "_blank", "noopener,noreferrer");
   return true;
 }
@@ -359,7 +391,7 @@ async function convertSelected() {
     return;
   }
   if (isLinkTrack(file)) {
-    setStatus("Clone the link into the playlist before converting it.");
+    setStatus("Clone a downloadable media file before converting. Live streams stay streaming-only.");
     return;
   }
 
@@ -639,7 +671,7 @@ function renderPlaylist() {
     button.type = "button";
     button.className = index === activeIndex ? "active" : "";
     name.textContent = file.name;
-    meta.textContent = isLinkTrack(file) ? "Link" : prettySize(file.size);
+    meta.textContent = isLinkTrack(file) ? "Stream" : prettySize(file.size);
     button.append(name, meta);
     button.addEventListener("click", () => playTrack(index));
     item.append(button);
@@ -692,7 +724,7 @@ function isPlayableFile(file) {
 }
 
 function isLinkTrack(track) {
-  return track?.kind === "link";
+  return track?.kind === "link" || track?.kind === "stream";
 }
 
 function nameFromLink(url) {
@@ -719,6 +751,30 @@ function parsedHttpUrl(value) {
 function isYouTubeUrl(url) {
   const hostname = url.hostname.toLowerCase().replace(/^www\./, "");
   return hostname === "youtube.com" || hostname === "m.youtube.com" || hostname === "youtu.be";
+}
+
+function isAudiomackUrl(url) {
+  const hostname = url.hostname.toLowerCase().replace(/^www\./, "");
+  return hostname === "audiomack.com";
+}
+
+function isHostedMusicPageUrl(url) {
+  return isYouTubeUrl(url) || isAudiomackUrl(url);
+}
+
+function isPlaylistStreamUrl(url) {
+  const extension = extensionFromName(url.pathname);
+  return extension === "m3u" || extension === "m3u8" || extension === "pls";
+}
+
+function serviceNameFromUrl(url) {
+  if (isAudiomackUrl(url)) {
+    return "Audiomack";
+  }
+  if (isYouTubeUrl(url)) {
+    return "YouTube";
+  }
+  return "Hosted music";
 }
 
 function youtubeQueryFromUrl(url) {

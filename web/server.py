@@ -25,6 +25,14 @@ import cgi
 ROOT = Path(__file__).resolve().parents[1]
 STATIC_DIR = ROOT / "web" / "static"
 MAX_LINK_BYTES = 100 * 1024 * 1024
+MAX_PLAYLIST_BYTES = 512 * 1024
+PLAYLIST_CONTENT_TYPES = {
+    "application/pls+xml",
+    "application/vnd.apple.mpegurl",
+    "audio/mpegurl",
+    "audio/x-mpegurl",
+    "audio/x-scpls",
+}
 CONVERSION_PROFILES = {
     "mp3": ["-vn", "-codec:a", "libmp3lame", "-b:a", "320k"],
     "m4a": ["-vn", "-codec:a", "aac", "-b:a", "192k"],
@@ -63,6 +71,10 @@ class AudioPlayerHandler(SimpleHTTPRequestHandler):
     def do_POST(self) -> None:
         if self.path == "/api/clone-link":
             self.clone_link()
+            return
+
+        if self.path == "/api/resolve-stream":
+            self.resolve_stream()
             return
 
         if self.path != "/api/convert":
@@ -131,6 +143,23 @@ class AudioPlayerHandler(SimpleHTTPRequestHandler):
         self.send_header("Content-Disposition", f'attachment; filename="{output_name}"')
         self.end_headers()
         self.wfile.write(data)
+
+    def resolve_stream(self) -> None:
+        try:
+            payload = self.read_json_payload()
+            if not isinstance(payload, dict):
+                raise ValueError("Request body must be a JSON object.")
+            url = str(payload.get("url", "")).strip()
+            validate_public_media_url(url)
+            stream = resolve_stream_url(url)
+        except ValueError as error:
+            self._send_json({"ok": False, "error": str(error)}, HTTPStatus.BAD_REQUEST)
+            return
+        except OSError as error:
+            self._send_json({"ok": False, "error": str(error)}, HTTPStatus.BAD_GATEWAY)
+            return
+
+        self._send_json({"ok": True, **stream})
 
     def clone_link(self) -> None:
         try:
@@ -261,6 +290,69 @@ def fetch_link_media(url: str) -> tuple[bytes, str, str]:
     raise ValueError("Linked media has too many redirects.")
 
 
+def resolve_stream_url(url: str) -> dict:
+    current_url = url
+    opener = urllib.request.build_opener(NoRedirectHandler)
+
+    for _ in range(5):
+        validate_public_media_url(current_url)
+        request = urllib.request.Request(
+            current_url,
+            headers={
+                "Accept": "audio/*,video/*,application/vnd.apple.mpegurl,audio/x-mpegurl,audio/x-scpls,*/*;q=0.5",
+                "User-Agent": "AuralithStudio/0.1",
+            },
+        )
+
+        try:
+            response = opener.open(request, timeout=15)
+        except urllib.error.HTTPError as error:
+            if error.code not in {301, 302, 303, 307, 308}:
+                raise OSError(f"Could not resolve stream: HTTP {error.code}") from error
+
+            location = error.headers.get("Location")
+            if not location:
+                raise ValueError("Stream redirected without a destination.") from error
+            current_url = urllib.parse.urljoin(current_url, location)
+            continue
+
+        with response:
+            content_type = response.headers.get("Content-Type", "application/octet-stream").split(";")[0].strip().lower()
+
+            if is_hls_url(current_url, content_type):
+                return {
+                    "stream_url": current_url,
+                    "name": stream_name(current_url),
+                    "content_type": "application/vnd.apple.mpegurl",
+                    "resolved": False,
+                }
+
+            if is_playlist_url(current_url, content_type):
+                data = read_limited(response, MAX_PLAYLIST_BYTES).decode("utf-8", "replace")
+                stream_url = first_playlist_stream(data, current_url)
+                validate_public_media_url(stream_url)
+                return {
+                    "stream_url": stream_url,
+                    "name": stream_name(stream_url),
+                    "content_type": "audio/playlist",
+                    "resolved": True,
+                }
+
+            if content_type in {"text/html", "application/json"}:
+                raise ValueError("This link is a page, not a direct online audio stream.")
+            if content_type.startswith("text/") and not has_stream_extension(current_url):
+                raise ValueError("This link does not look like an online audio stream.")
+
+            return {
+                "stream_url": current_url,
+                "name": stream_name(current_url),
+                "content_type": content_type or "application/octet-stream",
+                "resolved": False,
+            }
+
+    raise ValueError("Stream has too many redirects.")
+
+
 class NoRedirectHandler(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         return None
@@ -288,6 +380,48 @@ def filename_from_response(url: str, content_disposition: str) -> str:
 
     name = "".join(character for character in urllib.parse.unquote(raw_name) if character.isalnum() or character in " ._-").strip()
     return name or "linked-media"
+
+
+def is_playlist_url(url: str, content_type: str) -> bool:
+    extension = Path(urllib.parse.urlparse(url).path).suffix.lower()
+    return content_type in PLAYLIST_CONTENT_TYPES or extension in {".m3u", ".m3u8", ".pls"}
+
+
+def is_hls_url(url: str, content_type: str) -> bool:
+    extension = Path(urllib.parse.urlparse(url).path).suffix.lower()
+    return content_type == "application/vnd.apple.mpegurl" or extension == ".m3u8"
+
+
+def has_stream_extension(url: str) -> bool:
+    extension = Path(urllib.parse.urlparse(url).path).suffix.lower()
+    return extension in {".aac", ".flac", ".m4a", ".mp3", ".mp4", ".oga", ".ogg", ".opus", ".wav", ".webm"}
+
+
+def first_playlist_stream(data: str, base_url: str) -> str:
+    for raw_line in data.splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or line.startswith("["):
+            continue
+        if "=" in line:
+            key, value = line.split("=", 1)
+            if not key.lower().startswith("file"):
+                continue
+            line = value.strip()
+
+        candidate = urllib.parse.urljoin(base_url, line)
+        parsed = urllib.parse.urlparse(candidate)
+        if parsed.scheme in {"http", "https"} and parsed.hostname:
+            return candidate
+
+    raise ValueError("No playable stream URL was found in this playlist.")
+
+
+def stream_name(url: str) -> str:
+    parsed = urllib.parse.urlparse(url)
+    name = Path(parsed.path).name
+    if name:
+        return filename_from_response(url, "")
+    return parsed.hostname or "online-stream"
 
 
 def fetch_youtube_suggestions(path: str) -> dict:

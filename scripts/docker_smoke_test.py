@@ -98,19 +98,22 @@ def check_web_app_files() -> None:
         "+20s",
         "Motion Studio",
         "Auto-convert",
-        "Direct Media",
-        "Play link",
-        "Clone to playlist",
-        "/app.js?v=20260823-youtube-link-guard",
+        "Online Streaming",
+        "Play stream",
+        "Clone file link",
+        "/app.js?v=20260823-online-streams",
     ]
     missing_text = [text for text in required_text if text not in html]
     if missing_text:
         raise AssertionError(f"Missing web app UI text: {', '.join(missing_text)}")
     required_script_text = [
-        "routeStreamingLink",
+        "routeHostedMusicPage",
+        "resolveOnlineStream",
         "isYouTubeUrl",
-        "Removed YouTube watch page from the playlist.",
-        "YouTube pages are not direct media files",
+        "isAudiomackUrl",
+        "isPlaylistStreamUrl",
+        "Removed hosted music page from the playlist.",
+        "official player",
     ]
     missing_script_text = [text for text in required_script_text if text not in app_js]
     if missing_script_text:
@@ -126,6 +129,12 @@ def check_web_app_files() -> None:
     spec.loader.exec_module(module)
     if "no-store" not in server_path.read_text(encoding="utf-8"):
         raise AssertionError("web/server.py must disable browser caching for Docker testing")
+    if "resolve_stream" not in server_path.read_text(encoding="utf-8"):
+        raise AssertionError("web/server.py must resolve online stream playlists")
+    if module.first_playlist_stream("#EXTM3U\nhttps://example.com/live.mp3\n", "https://example.com/station.m3u") != "https://example.com/live.mp3":
+        raise AssertionError("M3U stream playlist parsing failed")
+    if module.first_playlist_stream("[playlist]\nFile1=/live.aac\n", "https://example.com/station.pls") != "https://example.com/live.aac":
+        raise AssertionError("PLS stream playlist parsing failed")
 
     for blocked_url in ("file:///tmp/song.mp3", "http://127.0.0.1/song.mp3", "http://localhost/song.mp3"):
         try:
