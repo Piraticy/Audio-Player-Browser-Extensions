@@ -221,6 +221,18 @@ function playTrack(index) {
     return;
   }
 
+  if (isLinkTrack(track)) {
+    const linkUrl = parsedHttpUrl(track.url);
+    if (!linkUrl) {
+      removePlaylistTrack(index, "Removed an invalid link from the playlist.");
+      return;
+    }
+    if (routeStreamingLink(linkUrl)) {
+      removePlaylistTrack(index, "Removed YouTube watch page from the playlist.");
+      return;
+    }
+  }
+
   if (audio.src.startsWith("blob:")) {
     URL.revokeObjectURL(audio.src);
   }
@@ -287,17 +299,14 @@ async function cloneMediaLink() {
 
 function mediaLinkUrl() {
   const rawLink = mediaLinkInput.value.trim();
+  const url = parsedHttpUrl(rawLink);
 
-  try {
-    const url = new URL(rawLink);
-    if (url.protocol !== "http:" && url.protocol !== "https:") {
-      throw new Error("Unsupported protocol.");
-    }
-    return url;
-  } catch {
+  if (!url) {
     linkStatus.textContent = "Paste a valid http or https direct media link.";
     return null;
   }
+
+  return url;
 }
 
 function routeStreamingLink(url) {
@@ -638,6 +647,21 @@ function renderPlaylist() {
   });
 }
 
+function removePlaylistTrack(index, message) {
+  playlist.splice(index, 1);
+  if (activeIndex === index) {
+    audio.pause();
+    audio.removeAttribute("src");
+    activeIndex = -1;
+    updateTrackCopy();
+  } else if (activeIndex > index) {
+    activeIndex -= 1;
+  }
+
+  renderPlaylist();
+  setStatus(message);
+}
+
 function updateTrackCopy(file) {
   if (!file) {
     trackName.textContent = "Choose a media file";
@@ -677,6 +701,18 @@ function nameFromLink(url) {
     return name || new URL(url).hostname;
   } catch {
     return "linked-media";
+  }
+}
+
+function parsedHttpUrl(value) {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return null;
+    }
+    return url;
+  } catch {
+    return null;
   }
 }
 

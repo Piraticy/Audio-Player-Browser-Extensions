@@ -101,6 +101,7 @@ def check_web_app_files() -> None:
         "Direct Media",
         "Play link",
         "Clone to playlist",
+        "/app.js?v=20260823-youtube-link-guard",
     ]
     missing_text = [text for text in required_text if text not in html]
     if missing_text:
@@ -108,6 +109,7 @@ def check_web_app_files() -> None:
     required_script_text = [
         "routeStreamingLink",
         "isYouTubeUrl",
+        "Removed YouTube watch page from the playlist.",
         "YouTube pages are not direct media files",
     ]
     missing_script_text = [text for text in required_script_text if text not in app_js]
@@ -122,6 +124,8 @@ def check_web_app_files() -> None:
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
+    if "no-store" not in server_path.read_text(encoding="utf-8"):
+        raise AssertionError("web/server.py must disable browser caching for Docker testing")
 
     for blocked_url in ("file:///tmp/song.mp3", "http://127.0.0.1/song.mp3", "http://localhost/song.mp3"):
         try:

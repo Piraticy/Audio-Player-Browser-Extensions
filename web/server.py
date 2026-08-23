@@ -172,6 +172,10 @@ class AudioPlayerHandler(SimpleHTTPRequestHandler):
     def log_message(self, format: str, *args) -> None:
         print(f"{self.address_string()} - {format % args}")
 
+    def end_headers(self) -> None:
+        self.send_header("Cache-Control", "no-store")
+        super().end_headers()
+
     def _send_json(self, payload: dict, status: HTTPStatus = HTTPStatus.OK) -> None:
         data = json.dumps(payload).encode("utf-8")
         self.send_response(status)
