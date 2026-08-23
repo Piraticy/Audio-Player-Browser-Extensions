@@ -73,6 +73,7 @@ The Docker container serves a browser app on port `8091`.
 - Save and remember searches in the browser
 - Play direct online audio streams, podcast files, and browser-supported video streams
 - Resolve `.m3u` and `.pls` radio playlists through the Python server
+- Proxy resolved streams through the local Docker app for reliable browser playback and visualizer support
 - Try browser-supported HLS `.m3u8` stream URLs
 - Start built-in stream presets for quick testing
 - Clone direct public downloadable media links into the playlist through the Python server

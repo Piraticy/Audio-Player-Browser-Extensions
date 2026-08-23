@@ -232,7 +232,7 @@ function playTrack(index) {
   }
 
   if (isLinkTrack(track)) {
-    const linkUrl = parsedHttpUrl(track.url);
+    const linkUrl = parsedHttpUrl(track.sourceUrl || track.url);
     if (!linkUrl) {
       removePlaylistTrack(index, "Removed an invalid link from the playlist.");
       return;
@@ -273,10 +273,11 @@ async function playMediaLink() {
       name: stream.name || nameFromLink(stream.stream_url),
       type: stream.resolved ? "Resolved online stream" : "Online stream",
       size: 0,
-      url: stream.stream_url
+      url: stream.playback_url || stream.stream_url,
+      sourceUrl: stream.stream_url
     };
     addPlayableFiles([track]);
-    linkStatus.textContent = stream.resolved ? "Resolved playlist and started stream." : "Playing online stream.";
+    linkStatus.textContent = stream.resolved ? "Resolved playlist and started local-proxy stream." : "Playing through local stream proxy.";
   } catch (error) {
     linkStatus.textContent = error instanceof Error ? error.message : "Could not resolve this online stream.";
   } finally {

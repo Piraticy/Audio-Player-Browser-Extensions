@@ -101,9 +101,9 @@ def check_web_app_files() -> None:
         "Online Streaming",
         "Play stream",
         "Clone file link",
-        "Groove Salad",
+        "FIP Live",
         "MP3 sample",
-        "/app.js?v=20260823-online-streams",
+        "/app.js?v=20260823-stream-proxy",
     ]
     missing_text = [text for text in required_text if text not in html]
     if missing_text:
@@ -111,6 +111,7 @@ def check_web_app_files() -> None:
     required_script_text = [
         "routeHostedMusicPage",
         "resolveOnlineStream",
+        "sourceUrl",
         "streamPresets",
         "isYouTubeUrl",
         "isAudiomackUrl",
@@ -134,6 +135,10 @@ def check_web_app_files() -> None:
         raise AssertionError("web/server.py must disable browser caching for Docker testing")
     if "resolve_stream" not in server_path.read_text(encoding="utf-8"):
         raise AssertionError("web/server.py must resolve online stream playlists")
+    if "proxy_stream" not in server_path.read_text(encoding="utf-8"):
+        raise AssertionError("web/server.py must proxy online streams through localhost")
+    if module.proxied_stream_url("https://example.com/live.mp3") != "/api/stream?url=https%3A%2F%2Fexample.com%2Flive.mp3":
+        raise AssertionError("Stream proxy URL generation failed")
     if module.first_playlist_stream("#EXTM3U\nhttps://example.com/live.mp3\n", "https://example.com/station.m3u") != "https://example.com/live.mp3":
         raise AssertionError("M3U stream playlist parsing failed")
     if module.first_playlist_stream("[playlist]\nFile1=/live.aac\n", "https://example.com/station.pls") != "https://example.com/live.aac":

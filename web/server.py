@@ -60,6 +60,10 @@ class AudioPlayerHandler(SimpleHTTPRequestHandler):
             )
             return
 
+        if self.path.startswith("/api/stream"):
+            self.proxy_stream()
+            return
+
         if self.path.startswith("/api/youtube-suggestions"):
             self._send_json(fetch_youtube_suggestions(self.path))
             return
@@ -160,6 +164,34 @@ class AudioPlayerHandler(SimpleHTTPRequestHandler):
             return
 
         self._send_json({"ok": True, **stream})
+
+    def proxy_stream(self) -> None:
+        try:
+            parsed = urllib.parse.urlparse(self.path)
+            url = urllib.parse.parse_qs(parsed.query).get("url", [""])[0].strip()
+            validate_public_media_url(url)
+            response, content_type = open_stream_response(url)
+        except ValueError as error:
+            self._send_json({"ok": False, "error": str(error)}, HTTPStatus.BAD_REQUEST)
+            return
+        except OSError as error:
+            self._send_json({"ok": False, "error": str(error)}, HTTPStatus.BAD_GATEWAY)
+            return
+
+        with response:
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", content_type)
+            self.send_header("X-Accel-Buffering", "no")
+            self.end_headers()
+
+            while True:
+                try:
+                    chunk = response.read(1024 * 64)
+                    if not chunk:
+                        return
+                    self.wfile.write(chunk)
+                except (BrokenPipeError, ConnectionResetError):
+                    return
 
     def clone_link(self) -> None:
         try:
@@ -322,6 +354,7 @@ def resolve_stream_url(url: str) -> dict:
             if is_hls_url(current_url, content_type):
                 return {
                     "stream_url": current_url,
+                    "playback_url": proxied_stream_url(current_url),
                     "name": stream_name(current_url),
                     "content_type": "application/vnd.apple.mpegurl",
                     "resolved": False,
@@ -333,6 +366,7 @@ def resolve_stream_url(url: str) -> dict:
                 validate_public_media_url(stream_url)
                 return {
                     "stream_url": stream_url,
+                    "playback_url": proxied_stream_url(stream_url),
                     "name": stream_name(stream_url),
                     "content_type": "audio/playlist",
                     "resolved": True,
@@ -345,10 +379,50 @@ def resolve_stream_url(url: str) -> dict:
 
             return {
                 "stream_url": current_url,
+                "playback_url": proxied_stream_url(current_url),
                 "name": stream_name(current_url),
                 "content_type": content_type or "application/octet-stream",
                 "resolved": False,
             }
+
+    raise ValueError("Stream has too many redirects.")
+
+
+def open_stream_response(url: str):
+    current_url = url
+    opener = urllib.request.build_opener(NoRedirectHandler)
+
+    for _ in range(5):
+        validate_public_media_url(current_url)
+        request = urllib.request.Request(
+            current_url,
+            headers={
+                "Accept": "audio/*,video/*,*/*;q=0.5",
+                "Icy-MetaData": "0",
+                "User-Agent": "AuralithStudio/0.1",
+            },
+        )
+
+        try:
+            response = opener.open(request, timeout=15)
+        except urllib.error.HTTPError as error:
+            if error.code not in {301, 302, 303, 307, 308}:
+                raise OSError(f"Could not open stream: HTTP {error.code}") from error
+
+            location = error.headers.get("Location")
+            if not location:
+                raise ValueError("Stream redirected without a destination.") from error
+            current_url = urllib.parse.urljoin(current_url, location)
+            continue
+
+        content_type = response.headers.get("Content-Type", "application/octet-stream").split(";")[0].strip().lower()
+        if content_type in {"text/html", "application/json"}:
+            response.close()
+            raise ValueError("This link is a page, not a direct online audio stream.")
+        if content_type.startswith("text/") and not has_stream_extension(current_url):
+            response.close()
+            raise ValueError("This link does not look like an online audio stream.")
+        return response, content_type or "application/octet-stream"
 
     raise ValueError("Stream has too many redirects.")
 
@@ -422,6 +496,10 @@ def stream_name(url: str) -> str:
     if name:
         return filename_from_response(url, "")
     return parsed.hostname or "online-stream"
+
+
+def proxied_stream_url(url: str) -> str:
+    return "/api/stream?" + urllib.parse.urlencode({"url": url})
 
 
 def fetch_youtube_suggestions(path: str) -> dict:
