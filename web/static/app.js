@@ -21,6 +21,10 @@ const statusElement = document.getElementById("status");
 const youtubeSearchForm = document.getElementById("youtubeSearchForm");
 const youtubeSearchInput = document.getElementById("youtubeSearchInput");
 const youtubeStatus = document.getElementById("youtubeStatus");
+const mediaLinkForm = document.getElementById("mediaLinkForm");
+const mediaLinkInput = document.getElementById("mediaLinkInput");
+const cloneLinkButton = document.getElementById("cloneLinkButton");
+const linkStatus = document.getElementById("linkStatus");
 const saveSearchButton = document.getElementById("saveSearchButton");
 const rememberSearches = document.getElementById("rememberSearches");
 const suggestionsElement = document.getElementById("suggestions");
@@ -40,6 +44,7 @@ const searchStorageKey = "audioPlayer.searches";
 const rememberStorageKey = "audioPlayer.rememberSearches";
 const visualizerModeKey = "audioPlayer.visualizerMode";
 const autoConvertStorageKey = "auralith.autoConvertMp3";
+const playableExtensions = new Set(["aac", "aiff", "flac", "m4a", "mkv", "mov", "mp3", "mp4", "oga", "ogg", "opus", "wav", "webm"]);
 
 restorePreferences();
 renderSavedSearches();
@@ -152,6 +157,11 @@ youtubeSearchForm.addEventListener("submit", (event) => {
   window.open(url, "_blank", "noopener,noreferrer");
   youtubeStatus.textContent = "Opened official YouTube search results.";
 });
+mediaLinkForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  playMediaLink();
+});
+cloneLinkButton.addEventListener("click", cloneMediaLink);
 
 audio.addEventListener("play", () => {
   playButton.textContent = "Pause";
@@ -168,7 +178,7 @@ audio.addEventListener("ended", () => {
 document.addEventListener("keydown", handleKeyboardShortcuts);
 
 function addFiles(files) {
-  const mediaFiles = files.filter((file) => file.type.startsWith("audio/") || file.type.startsWith("video/"));
+  const mediaFiles = files.filter(isPlayableFile);
 
   if (!mediaFiles.length) {
     setStatus("Add audio or video files.");
@@ -196,23 +206,88 @@ function addPlayableFiles(files) {
 }
 
 function playTrack(index) {
-  const file = playlist[index];
-  if (!file) {
+  const track = playlist[index];
+  if (!track) {
     return;
   }
 
-  if (audio.src) {
+  if (audio.src.startsWith("blob:")) {
     URL.revokeObjectURL(audio.src);
   }
 
   activeIndex = index;
-  audio.src = URL.createObjectURL(file);
+  audio.src = isLinkTrack(track) ? track.url : URL.createObjectURL(track);
   audio.play().catch(() => {
     setStatus("Press Play to start this file.");
   });
-  updateTrackCopy(file);
+  updateTrackCopy(track);
   renderPlaylist();
-  setStatus(`Playing ${file.name}`);
+  setStatus(`Playing ${track.name}`);
+}
+
+function playMediaLink() {
+  const url = normalizedMediaLink();
+  if (!url) {
+    return;
+  }
+
+  const track = {
+    kind: "link",
+    name: nameFromLink(url),
+    type: "Direct media link",
+    size: 0,
+    url
+  };
+  addPlayableFiles([track]);
+  linkStatus.textContent = "Playing direct media link.";
+}
+
+async function cloneMediaLink() {
+  const url = normalizedMediaLink();
+  if (!url) {
+    return;
+  }
+
+  cloneLinkButton.disabled = true;
+  linkStatus.textContent = "Cloning direct media link...";
+
+  try {
+    const response = await fetch("/api/clone-link", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url })
+    });
+
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      throw new Error(payload.error || "Could not clone this media link.");
+    }
+
+    const blob = await response.blob();
+    const disposition = response.headers.get("Content-Disposition") || "";
+    const filename = getFilename(disposition) || nameFromLink(url);
+    addFiles([new File([blob], filename, { type: blob.type || "application/octet-stream" })]);
+    linkStatus.textContent = "Cloned media into the playlist.";
+  } catch (error) {
+    linkStatus.textContent = error instanceof Error ? error.message : "Could not clone this media link.";
+  } finally {
+    cloneLinkButton.disabled = false;
+  }
+}
+
+function normalizedMediaLink() {
+  const rawLink = mediaLinkInput.value.trim();
+
+  try {
+    const url = new URL(rawLink);
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      throw new Error("Unsupported protocol.");
+    }
+    return url.toString();
+  } catch {
+    linkStatus.textContent = "Paste a valid http or https direct media link.";
+    return "";
+  }
 }
 
 function handleKeyboardShortcuts(event) {
@@ -250,6 +325,10 @@ async function convertSelected() {
   const file = playlist[activeIndex];
   if (!file) {
     setStatus("Choose a media file first.");
+    return;
+  }
+  if (isLinkTrack(file)) {
+    setStatus("Clone the link into the playlist before converting it.");
     return;
   }
 
@@ -529,7 +608,7 @@ function renderPlaylist() {
     button.type = "button";
     button.className = index === activeIndex ? "active" : "";
     name.textContent = file.name;
-    meta.textContent = prettySize(file.size);
+    meta.textContent = isLinkTrack(file) ? "Link" : prettySize(file.size);
     button.append(name, meta);
     button.addEventListener("click", () => playTrack(index));
     item.append(button);
@@ -545,7 +624,7 @@ function updateTrackCopy(file) {
   }
 
   trackName.textContent = file.name;
-  trackMeta.textContent = `${file.type || "media"} / ${prettySize(file.size)}`;
+  trackMeta.textContent = isLinkTrack(file) ? file.type : `${file.type || "media"} / ${prettySize(file.size)}`;
 }
 
 function setStatus(message) {
@@ -560,6 +639,25 @@ function prettySize(bytes) {
   return `${mb.toFixed(mb >= 10 ? 0 : 1)} MB`;
 }
 
+function isPlayableFile(file) {
+  const type = file.type || "";
+  const extension = extensionFromName(file.name);
+  return type.startsWith("audio/") || type.startsWith("video/") || playableExtensions.has(extension);
+}
+
+function isLinkTrack(track) {
+  return track?.kind === "link";
+}
+
+function nameFromLink(url) {
+  try {
+    const name = decodeURIComponent(new URL(url).pathname.split("/").filter(Boolean).pop() || "");
+    return name || new URL(url).hostname;
+  } catch {
+    return "linked-media";
+  }
+}
+
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
@@ -568,9 +666,23 @@ function stripExtension(name) {
   return name.replace(/\.[^.]+$/, "");
 }
 
+function extensionFromName(name) {
+  return name.toLowerCase().split(".").pop() || "";
+}
+
 function getFilename(disposition) {
-  const match = disposition.match(/filename="([^"]+)"/);
-  return match?.[1];
+  const encodedMatch = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+  if (encodedMatch) {
+    return decodeURIComponent(encodedMatch[1]);
+  }
+
+  const quotedMatch = disposition.match(/filename="([^"]+)"/i);
+  if (quotedMatch) {
+    return quotedMatch[1];
+  }
+
+  const plainMatch = disposition.match(/filename=([^;]+)/i);
+  return plainMatch?.[1]?.trim();
 }
 
 function downloadBlob(blob, filename) {

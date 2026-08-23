@@ -35,7 +35,7 @@ def main() -> int:
 
 
 def check_python_compile() -> None:
-    run(["python3", "-m", "py_compile", "desktop/audio_player_app.py"])
+    run(["python3", "-m", "py_compile", "desktop/audio_player_app.py", "web/server.py"])
 
 
 def check_desktop_import() -> None:
@@ -89,12 +89,37 @@ def check_web_app_files() -> None:
         raise AssertionError(f"Missing web app files: {', '.join(missing)}")
 
     html = (ROOT / "web" / "static" / "index.html").read_text(encoding="utf-8")
-    required_text = ["Auralith", "Try demo", "Drop audio or video files here", "-20s", "+20s", "Motion Studio", "Auto-convert"]
+    required_text = [
+        "Auralith",
+        "Try demo",
+        "Drop audio or video files here",
+        "-20s",
+        "+20s",
+        "Motion Studio",
+        "Auto-convert",
+        "Direct Media",
+        "Play link",
+        "Clone to playlist",
+    ]
     missing_text = [text for text in required_text if text not in html]
     if missing_text:
         raise AssertionError(f"Missing web app UI text: {', '.join(missing_text)}")
 
-    run(["python3", "-m", "py_compile", "web/server.py"])
+    server_path = ROOT / "web" / "server.py"
+    spec = importlib.util.spec_from_file_location("web_server", server_path)
+    if not spec or not spec.loader:
+        raise RuntimeError("Could not load web/server.py")
+
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+
+    for blocked_url in ("file:///tmp/song.mp3", "http://127.0.0.1/song.mp3", "http://localhost/song.mp3"):
+        try:
+            module.validate_public_media_url(blocked_url)
+        except ValueError:
+            continue
+        raise AssertionError(f"Unsafe link was not blocked: {blocked_url}")
 
 
 def check_ffmpeg_conversion() -> None:

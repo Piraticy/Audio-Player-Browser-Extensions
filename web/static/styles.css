@@ -278,6 +278,7 @@ canvas {
 }
 
 .search-card,
+.link-card,
 .playlist-card,
 .converter {
   display: grid;
@@ -285,6 +286,7 @@ canvas {
 }
 
 .search-card,
+.link-card,
 .playlist-card {
   min-width: 0;
 }

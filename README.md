@@ -71,9 +71,11 @@ The Docker container serves a browser app on port `8091`.
 - Search YouTube and open official results in a new tab
 - Fetch YouTube search suggestions through the Docker app
 - Save and remember searches in the browser
+- Play direct audio or video links from sources you are authorized to use
+- Clone direct public media links into the playlist through the Python server
 - Download converted output files
 
-YouTube search is discovery-only and opens official YouTube results. Auralith Studio does not extract or convert YouTube streams.
+YouTube search is discovery-only and opens official YouTube results. Auralith Studio does not extract or convert YouTube streams. Link playback and cloning are for direct media file URLs, such as authorized MP3, WAV, M4A, OGG, FLAC, or video-file links. The clone endpoint blocks private, local, and reserved network targets and limits cloned media to 100 MB.
 
 ## Auralith Browser Extension
 
