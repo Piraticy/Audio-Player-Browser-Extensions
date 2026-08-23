@@ -1,4 +1,4 @@
-# Audio Player Desktop App
+# Auralith Studio Desktop App
 
 This is the first desktop app for the project. It plays local or authorized media files and converts media files to audio formats through FFmpeg.
 

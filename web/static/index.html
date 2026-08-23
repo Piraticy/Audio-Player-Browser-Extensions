@@ -3,7 +3,8 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Audio Player</title>
+    <title>Auralith Studio</title>
+    <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
@@ -11,8 +12,8 @@
       <section class="player-panel">
         <header class="topbar">
           <div>
-            <p class="eyebrow">Audio Player Studio</p>
-            <h1>Audio Player</h1>
+            <p class="eyebrow">Auralith Studio</p>
+            <h1>Auralith</h1>
           </div>
           <label class="file-button primary-action">
             <input id="fileInput" type="file" accept="audio/*,video/*" multiple>
@@ -31,14 +32,14 @@
             <div class="badges" aria-label="Player capabilities">
               <span>FFmpeg</span>
               <span>320 kbps MP3</span>
-              <span>Local files</span>
+              <span>Auto-convert</span>
             </div>
           </div>
         </section>
 
         <section id="dropZone" class="drop-zone">
           <strong>Drop audio or video files here</strong>
-          <span>Local playback starts instantly. Conversion stays in Docker.</span>
+          <span>Local and authorized files can be converted to MP3 automatically.</span>
         </section>
 
         <section class="visualizer-panel" aria-label="Audio visualizer">
@@ -116,6 +117,10 @@
             <option value="flac">FLAC</option>
             <option value="ogg">OGG</option>
           </select>
+          <label class="remember-toggle full-width">
+            <input id="autoConvertMp3" type="checkbox">
+            Auto-convert added files to MP3
+          </label>
           <button id="convertButton" type="button">Convert selected</button>
           <p id="status" class="status" role="status">Ready.</p>
         </div>

@@ -1,8 +1,8 @@
-# Audio Player
+# Auralith Studio
 
-Music Player app and extensions for all browsers.
+Music player app and extensions for all browsers.
 
-Audio Player is a local-first music project with a desktop app, Docker web app, and browser-extension foundation.
+Auralith Studio is a local-first music project with a Python desktop app, Python-powered Docker web app, and browser-extension foundation.
 
 The project is built for files and media the user owns or is authorized to convert. It does not remove ads, bypass YouTube or streaming-service playback, or extract protected media.
 
@@ -49,8 +49,8 @@ open http://localhost:8091
 Or without Compose:
 
 ```sh
-docker build -t audio-player:local .
-docker run --rm audio-player:local
+docker build -t auralith-studio:local .
+docker run --rm auralith-studio:local
 ```
 
 The container verifies the Python app, browser-extension JavaScript, manifest JSON, and FFmpeg conversion support. The desktop UI itself should still be run on the host.
@@ -62,6 +62,7 @@ The Docker container serves a browser app on port `8091`.
 - Play selected local audio files in the browser
 - Add files with a picker or drag-and-drop
 - Generate a built-in demo track for quick testing
+- Automatically convert added local or authorized media files to 320 kbps MP3
 - Skip backward or forward by 10 or 20 seconds
 - Use keyboard shortcuts: Space, ArrowLeft, ArrowRight, `N`, and `P`
 - Pick visualizer modes: bars, wave, halo, or off
@@ -72,7 +73,9 @@ The Docker container serves a browser app on port `8091`.
 - Save and remember searches in the browser
 - Download converted output files
 
-## Browser Extension
+YouTube search is discovery-only and opens official YouTube results. Auralith Studio does not extract or convert YouTube streams.
+
+## Auralith Browser Extension
 
 A lightweight Manifest V3 browser extension for playing local audio files from a polished popup UI.
 

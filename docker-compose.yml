@@ -1,9 +1,9 @@
 services:
   audio-player:
     build: .
-    image: audio-player:local
+    image: auralith-studio:local
     pull_policy: build
-    container_name: audio-player-dev
+    container_name: auralith-studio-dev
     command: python3 web/server.py --host 0.0.0.0 --port 8091
     ports:
       - "8091:8091"
@@ -12,7 +12,7 @@ services:
 
   audio-player-test:
     build: .
-    image: audio-player:local
+    image: auralith-studio:local
     pull_policy: build
     command: python3 scripts/docker_smoke_test.py
     volumes:

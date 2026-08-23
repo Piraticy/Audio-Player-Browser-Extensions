@@ -14,6 +14,7 @@ const forward10Button = document.getElementById("forward10Button");
 const forward20Button = document.getElementById("forward20Button");
 const clearButton = document.getElementById("clearButton");
 const convertButton = document.getElementById("convertButton");
+const autoConvertMp3 = document.getElementById("autoConvertMp3");
 const format = document.getElementById("format");
 const playlistElement = document.getElementById("playlist");
 const statusElement = document.getElementById("status");
@@ -38,6 +39,7 @@ let visualizerFrame;
 const searchStorageKey = "audioPlayer.searches";
 const rememberStorageKey = "audioPlayer.rememberSearches";
 const visualizerModeKey = "audioPlayer.visualizerMode";
+const autoConvertStorageKey = "auralith.autoConvertMp3";
 
 restorePreferences();
 renderSavedSearches();
@@ -115,6 +117,9 @@ clearButton.addEventListener("click", () => {
 });
 
 convertButton.addEventListener("click", convertSelected);
+autoConvertMp3.addEventListener("change", () => {
+  localStorage.setItem(autoConvertStorageKey, String(autoConvertMp3.checked));
+});
 saveSearchButton.addEventListener("click", () => saveSearch(youtubeSearchInput.value));
 rememberSearches.addEventListener("change", () => {
   localStorage.setItem(rememberStorageKey, String(rememberSearches.checked));
@@ -170,13 +175,23 @@ function addFiles(files) {
     return;
   }
 
-  playlist.push(...mediaFiles);
+  if (autoConvertMp3.checked) {
+    autoConvertFiles(mediaFiles);
+    return;
+  }
+
+  addPlayableFiles(mediaFiles);
+}
+
+function addPlayableFiles(files) {
+  const firstNewIndex = playlist.length;
+  playlist.push(...files);
   renderPlaylist();
 
-  if (activeIndex === -1 && playlist.length) {
-    playTrack(0);
+  if (activeIndex === -1 && files.length) {
+    playTrack(firstNewIndex);
   } else {
-    setStatus(`Added ${mediaFiles.length} file(s).`);
+    setStatus(`Added ${files.length} file(s).`);
   }
 }
 
@@ -241,24 +256,8 @@ async function convertSelected() {
   setStatus(`Converting ${file.name}...`);
   convertButton.disabled = true;
 
-  const body = new FormData();
-  body.append("file", file);
-  body.append("format", format.value);
-
   try {
-    const response = await fetch("/api/convert", {
-      method: "POST",
-      body
-    });
-
-    if (!response.ok) {
-      const payload = await response.json().catch(() => ({}));
-      throw new Error(payload.error || "Conversion failed.");
-    }
-
-    const blob = await response.blob();
-    const disposition = response.headers.get("Content-Disposition") || "";
-    const filename = getFilename(disposition) || `${stripExtension(file.name)}.${format.value}`;
+    const { blob, filename } = await convertFile(file, format.value);
     downloadBlob(blob, filename);
     setStatus(`Converted ${filename}`);
   } catch (error) {
@@ -266,6 +265,54 @@ async function convertSelected() {
   } finally {
     convertButton.disabled = false;
   }
+}
+
+async function autoConvertFiles(files) {
+  autoConvertMp3.disabled = true;
+  convertButton.disabled = true;
+  const convertedFiles = [];
+  const failedFiles = [];
+
+  for (const [index, file] of files.entries()) {
+    setStatus(`Auto-converting ${index + 1}/${files.length}: ${file.name}`);
+    try {
+      const { blob, filename } = await convertFile(file, "mp3");
+      convertedFiles.push(new File([blob], filename, { type: "audio/mpeg" }));
+    } catch {
+      failedFiles.push(file);
+    }
+  }
+
+  addPlayableFiles([...convertedFiles, ...failedFiles]);
+  autoConvertMp3.disabled = false;
+  convertButton.disabled = false;
+
+  if (failedFiles.length) {
+    setStatus(`Auto-converted ${convertedFiles.length}; added ${failedFiles.length} original file(s).`);
+  } else {
+    setStatus(`Auto-converted ${convertedFiles.length} file(s) to MP3.`);
+  }
+}
+
+async function convertFile(file, outputFormat) {
+  const body = new FormData();
+  body.append("file", file);
+  body.append("format", outputFormat);
+
+  const response = await fetch("/api/convert", {
+    method: "POST",
+    body
+  });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.error || "Conversion failed.");
+  }
+
+  const blob = await response.blob();
+  const disposition = response.headers.get("Content-Disposition") || "";
+  const filename = getFilename(disposition) || `${stripExtension(file.name)}.${outputFormat}`;
+  return { blob, filename };
 }
 
 async function fetchSuggestions() {
@@ -344,6 +391,7 @@ function renderSavedSearches() {
 function restorePreferences() {
   rememberSearches.checked = localStorage.getItem(rememberStorageKey) !== "false";
   visualizerMode.value = localStorage.getItem(visualizerModeKey) || "bars";
+  autoConvertMp3.checked = localStorage.getItem(autoConvertStorageKey) !== "false";
 }
 
 function startVisualizer() {
@@ -551,7 +599,7 @@ function createDemoTrack() {
     samples[index] = (bass + lead + shimmer) * envelope;
   }
 
-  return new File([encodeWav(samples, sampleRate)], "audio-player-demo.wav", { type: "audio/wav" });
+  return new File([encodeWav(samples, sampleRate)], "auralith-demo.wav", { type: "audio/wav" });
 }
 
 function encodeWav(samples, sampleRate) {

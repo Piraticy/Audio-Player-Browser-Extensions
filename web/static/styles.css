@@ -313,6 +313,11 @@ canvas {
   padding: 10px 12px;
 }
 
+.full-width {
+  justify-content: flex-start;
+  width: 100%;
+}
+
 .remember-toggle input {
   width: auto;
   accent-color: var(--accent);

@@ -65,6 +65,14 @@ def check_manifest_json() -> None:
         raise AssertionError("manifest.json must use Manifest V3")
     if "offscreen" not in manifest.get("permissions", []):
         raise AssertionError("manifest.json must include the offscreen permission")
+    if manifest.get("name") != "Auralith Studio":
+        raise AssertionError("manifest.json must use the Auralith Studio app name")
+    for size in ("16", "32", "48", "128"):
+        icon_path = manifest.get("icons", {}).get(size)
+        if not icon_path or not (ROOT / icon_path).exists():
+            raise AssertionError(f"Missing extension icon for {size}px")
+        if not (ROOT / icon_path).read_bytes().startswith(b"\x89PNG\r\n\x1a\n"):
+            raise AssertionError(f"Extension icon for {size}px is not a valid PNG")
 
 
 def check_web_app_files() -> None:
@@ -73,13 +81,15 @@ def check_web_app_files() -> None:
         ROOT / "web" / "static" / "index.html",
         ROOT / "web" / "static" / "styles.css",
         ROOT / "web" / "static" / "app.js",
+        ROOT / "web" / "static" / "icons" / "favicon.svg",
+        ROOT / "web" / "static" / "icons" / "icon-128.png",
     ]
     missing = [str(path.relative_to(ROOT)) for path in required_files if not path.exists()]
     if missing:
         raise AssertionError(f"Missing web app files: {', '.join(missing)}")
 
     html = (ROOT / "web" / "static" / "index.html").read_text(encoding="utf-8")
-    required_text = ["Try demo", "Drop audio or video files here", "-20s", "+20s", "Motion Studio"]
+    required_text = ["Auralith", "Try demo", "Drop audio or video files here", "-20s", "+20s", "Motion Studio", "Auto-convert"]
     missing_text = [text for text in required_text if text not in html]
     if missing_text:
         raise AssertionError(f"Missing web app UI text: {', '.join(missing_text)}")
@@ -92,7 +102,7 @@ def check_ffmpeg_conversion() -> None:
     if not ffmpeg:
         raise RuntimeError("ffmpeg is required for Docker media conversion checks")
 
-    with tempfile.TemporaryDirectory(prefix="audio-player-") as temp_dir:
+    with tempfile.TemporaryDirectory(prefix="auralith-") as temp_dir:
         temp_path = Path(temp_dir)
         source = temp_path / "source.wav"
         target = temp_path / "converted.mp3"

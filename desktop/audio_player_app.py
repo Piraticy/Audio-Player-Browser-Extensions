@@ -61,7 +61,7 @@ class MediaTools:
 class AudioPlayerApp(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
-        self.title("Audio Player")
+        self.title("Auralith Studio")
         self.geometry("860x560")
         self.minsize(760, 500)
 
@@ -88,7 +88,7 @@ class AudioPlayerApp(tk.Tk):
         header.grid(row=0, column=0, sticky="ew")
         header.columnconfigure(0, weight=1)
 
-        title = ttk.Label(header, text="Audio Player", font=("TkDefaultFont", 24, "bold"))
+        title = ttk.Label(header, text="Auralith Studio", font=("TkDefaultFont", 24, "bold"))
         title.grid(row=0, column=0, sticky="w")
 
         self.tool_status = ttk.Label(header, text="", foreground="#5b6670")

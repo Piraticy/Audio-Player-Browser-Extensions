@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "Audio Player",
-  "description": "A lightweight browser-extension audio player for local music files.",
+  "name": "Auralith Studio",
+  "description": "Auralith Studio extension for local music playback.",
   "version": "0.1.0",
   "permissions": ["offscreen", "storage"],
   "background": {
@@ -10,6 +10,12 @@
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Audio Player"
+    "default_title": "Auralith Studio"
+  },
+  "icons": {
+    "16": "assets/icons/icon-16.png",
+    "32": "assets/icons/icon-32.png",
+    "48": "assets/icons/icon-48.png",
+    "128": "assets/icons/icon-128.png"
   }
 }

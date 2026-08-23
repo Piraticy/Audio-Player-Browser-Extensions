@@ -41,6 +41,7 @@ class AudioPlayerHandler(SimpleHTTPRequestHandler):
             self._send_json(
                 {
                     "ok": True,
+                    "app": "Auralith Studio",
                     "ffmpeg": bool(shutil.which("ffmpeg")),
                     "formats": sorted(CONVERSION_PROFILES),
                 }
@@ -87,7 +88,7 @@ class AudioPlayerHandler(SimpleHTTPRequestHandler):
         source_name = Path(upload.filename).name
         output_name = f"{Path(source_name).stem or 'converted'}.{output_format}"
 
-        with tempfile.TemporaryDirectory(prefix="audio-player-web-") as temp_dir:
+        with tempfile.TemporaryDirectory(prefix="auralith-web-") as temp_dir:
             temp_path = Path(temp_dir)
             source = temp_path / source_name
             target = temp_path / output_name
@@ -186,7 +187,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     server = ThreadingHTTPServer((args.host, args.port), AudioPlayerHandler)
-    print(f"Audio Player web app running on http://{args.host}:{args.port}")
+    print(f"Auralith Studio web app running on http://{args.host}:{args.port}")
     server.serve_forever()
     return 0
 
