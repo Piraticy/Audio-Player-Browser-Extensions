@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Audio Player",
+  "description": "A lightweight browser-extension audio player for local music files.",
+  "version": "0.1.0",
+  "permissions": ["offscreen", "storage"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Audio Player"
+  }
+}

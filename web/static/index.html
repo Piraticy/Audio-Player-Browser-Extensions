@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Audio Player</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <section class="player-panel">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Audio Player Studio</p>
+            <h1>Audio Player</h1>
+          </div>
+          <label class="file-button primary-action">
+            <input id="fileInput" type="file" accept="audio/*,video/*" multiple>
+            Add files
+          </label>
+        </header>
+
+        <section class="now-playing">
+          <div class="art-stage">
+            <div class="disc" aria-hidden="true"></div>
+          </div>
+          <div>
+            <p id="trackName" class="track-name">Choose a media file</p>
+            <p id="trackMeta" class="track-meta">MP3 conversion defaults to 320 kbps.</p>
+            <div class="badges" aria-label="Player capabilities">
+              <span>FFmpeg</span>
+              <span>320 kbps MP3</span>
+              <span>Local files</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="visualizer-panel" aria-label="Audio visualizer">
+          <div class="visualizer-topline">
+            <div>
+              <p class="eyebrow">Visualizer</p>
+              <h2>Motion Studio</h2>
+            </div>
+            <label>
+              Mode
+              <select id="visualizerMode">
+                <option value="bars">Bars</option>
+                <option value="wave">Wave</option>
+                <option value="halo">Halo</option>
+                <option value="off">Off</option>
+              </select>
+            </label>
+          </div>
+          <canvas id="visualizer" width="960" height="220"></canvas>
+        </section>
+
+        <audio id="audio" controls></audio>
+
+        <section class="controls" aria-label="Playback controls">
+          <button id="back20Button" type="button">-20s</button>
+          <button id="back10Button" type="button">-10s</button>
+          <button id="previousButton" type="button">Previous</button>
+          <button id="playButton" type="button">Play</button>
+          <button id="nextButton" type="button">Next</button>
+          <button id="forward10Button" type="button">+10s</button>
+          <button id="forward20Button" type="button">+20s</button>
+        </section>
+      </section>
+
+      <section class="side-panel">
+        <section class="search-card">
+          <div>
+            <p class="eyebrow">Streaming Search</p>
+            <h2>YouTube</h2>
+          </div>
+          <form id="youtubeSearchForm" class="search-form">
+            <input id="youtubeSearchInput" type="search" placeholder="Search YouTube">
+            <button type="submit">Search</button>
+          </form>
+          <div class="search-actions">
+            <button id="saveSearchButton" type="button">Save search</button>
+            <label class="remember-toggle">
+              <input id="rememberSearches" type="checkbox">
+              Remember
+            </label>
+          </div>
+          <div id="suggestions" class="suggestions" aria-label="Search suggestions"></div>
+          <div id="savedSearches" class="saved-searches" aria-label="Saved searches"></div>
+          <p id="youtubeStatus" class="fine-print">Opens official YouTube results.</p>
+        </section>
+
+        <section class="playlist-card">
+          <div class="section-heading">
+            <h2>Playlist</h2>
+            <button id="clearButton" type="button">Clear</button>
+          </div>
+          <ol id="playlist" class="playlist"></ol>
+        </section>
+
+        <div class="converter">
+          <div>
+            <p class="eyebrow">Converter</p>
+            <h2>Studio Export</h2>
+          </div>
+          <label for="format">Output format</label>
+          <select id="format">
+            <option value="mp3">MP3 320 kbps</option>
+            <option value="m4a">M4A</option>
+            <option value="wav">WAV</option>
+            <option value="flac">FLAC</option>
+            <option value="ogg">OGG</option>
+          </select>
+          <button id="convertButton" type="button">Convert selected</button>
+          <p id="status" class="status" role="status">Ready.</p>
+        </div>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Audio Player</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="player" aria-label="Audio player">
+      <header class="player__header">
+        <div>
+          <p class="eyebrow">Local Player</p>
+          <h1>Audio Player</h1>
+        </div>
+        <label class="icon-button file-picker" title="Add audio files">
+          <input id="fileInput" type="file" accept="audio/*" multiple>
+          <span aria-hidden="true">+</span>
+          <span class="sr-only">Add audio files</span>
+        </label>
+      </header>
+
+      <section class="now-playing" aria-live="polite">
+        <div class="album-art" aria-hidden="true">
+          <span></span>
+        </div>
+        <div class="track-copy">
+          <p id="trackName" class="track-name">Choose an audio file</p>
+          <p id="trackMeta" class="track-meta">MP3, WAV, OGG, M4A</p>
+        </div>
+      </section>
+
+      <section class="timeline" aria-label="Playback position">
+        <input id="seek" type="range" min="0" max="100" value="0" step="0.1" aria-label="Seek">
+        <div class="time-row">
+          <span id="currentTime">0:00</span>
+          <span id="duration">0:00</span>
+        </div>
+      </section>
+
+      <section class="controls" aria-label="Playback controls">
+        <button id="previousButton" class="icon-button" type="button" title="Previous track" aria-label="Previous track">
+          <span aria-hidden="true">&lt;</span>
+        </button>
+        <button id="playButton" class="play-button" type="button" aria-label="Play">
+          <span id="playIcon" aria-hidden="true">Play</span>
+        </button>
+        <button id="nextButton" class="icon-button" type="button" title="Next track" aria-label="Next track">
+          <span aria-hidden="true">&gt;</span>
+        </button>
+      </section>
+
+      <section class="volume-row" aria-label="Volume">
+        <span aria-hidden="true">Vol</span>
+        <input id="volume" type="range" min="0" max="1" value="0.8" step="0.01" aria-label="Volume">
+      </section>
+
+      <section class="playlist-section" aria-label="Playlist">
+        <div class="section-title">
+          <h2>Playlist</h2>
+          <button id="clearButton" type="button">Clear</button>
+        </div>
+        <ol id="playlist" class="playlist"></ol>
+      </section>
+
+      <p id="status" class="status" role="status"></p>
+    </main>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
