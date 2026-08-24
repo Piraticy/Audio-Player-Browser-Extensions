@@ -269,6 +269,29 @@ canvas {
   flex-wrap: wrap;
 }
 
+.volume-control {
+  display: grid;
+  min-width: min(100%, 280px);
+  grid-template-columns: auto auto minmax(110px, 1fr) 46px;
+  gap: 8px;
+  align-items: center;
+}
+
+.volume-control button {
+  min-width: 78px;
+}
+
+.volume-control label,
+.volume-control output {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.volume-control input {
+  accent-color: var(--accent);
+  padding: 0;
+}
+
 .side-panel {
   display: flex;
   min-width: 0;

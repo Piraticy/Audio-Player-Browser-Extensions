@@ -71,6 +71,12 @@
           <button id="nextButton" type="button">Next</button>
           <button id="forward10Button" type="button">+10s</button>
           <button id="forward20Button" type="button">+20s</button>
+          <div class="volume-control" aria-label="Volume control">
+            <button id="muteButton" type="button">Mute</button>
+            <label for="volumeSlider">Volume</label>
+            <input id="volumeSlider" type="range" min="0" max="100" value="80">
+            <output id="volumeValue" for="volumeSlider">80%</output>
+          </div>
         </section>
       </section>
 
@@ -145,6 +151,6 @@
       </section>
     </main>
 
-    <script src="/app.js?v=20260824-stream-history"></script>
+    <script src="/app.js?v=20260824-volume-gain"></script>
   </body>
 </html>

@@ -64,7 +64,8 @@ The Docker container serves a browser app on port `8091`.
 - Generate a built-in demo track for quick testing
 - Automatically convert added local or authorized media files to 320 kbps MP3
 - Skip backward or forward by 10 or 20 seconds
-- Use keyboard shortcuts: Space, ArrowLeft, ArrowRight, `N`, and `P`
+- Control volume with an app-level slider and mute toggle
+- Use keyboard shortcuts: Space, ArrowLeft, ArrowRight, ArrowUp, ArrowDown, `M`, `N`, and `P`
 - Pick visualizer modes: bars, wave, halo, or off
 - Convert selected local or authorized media files through FFmpeg in Docker
 - Export MP3 by default at 320 kbps

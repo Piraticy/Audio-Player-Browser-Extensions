@@ -96,6 +96,8 @@ def check_web_app_files() -> None:
         "Drop audio or video files here",
         "-20s",
         "+20s",
+        "Volume",
+        "Mute",
         "Motion Studio",
         "Auto-convert",
         "Online Streaming",
@@ -104,7 +106,7 @@ def check_web_app_files() -> None:
         "FIP Live",
         "MP3 sample",
         "Recent streams",
-        "/app.js?v=20260824-stream-history",
+        "/app.js?v=20260824-volume-gain",
     ]
     missing_text = [text for text in required_text if text not in html]
     if missing_text:
@@ -116,6 +118,10 @@ def check_web_app_files() -> None:
         "addOrPlayStream",
         "requestedUrl",
         "sourceUrl",
+        "gainNode",
+        "setVolume",
+        "setMuted",
+        "volumeStorageKey",
         "streamPresets",
         "isYouTubeUrl",
         "isAudiomackUrl",

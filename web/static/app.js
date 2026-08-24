@@ -12,6 +12,9 @@ const back20Button = document.getElementById("back20Button");
 const back10Button = document.getElementById("back10Button");
 const forward10Button = document.getElementById("forward10Button");
 const forward20Button = document.getElementById("forward20Button");
+const muteButton = document.getElementById("muteButton");
+const volumeSlider = document.getElementById("volumeSlider");
+const volumeValue = document.getElementById("volumeValue");
 const clearButton = document.getElementById("clearButton");
 const convertButton = document.getElementById("convertButton");
 const autoConvertMp3 = document.getElementById("autoConvertMp3");
@@ -40,13 +43,17 @@ let activeIndex = -1;
 let suggestionTimer = 0;
 let audioContext;
 let analyser;
+let gainNode;
 let mediaSource;
 let visualizerFrame;
+let lastAudibleVolume = 0.8;
 const searchStorageKey = "audioPlayer.searches";
 const rememberStorageKey = "audioPlayer.rememberSearches";
 const visualizerModeKey = "audioPlayer.visualizerMode";
 const autoConvertStorageKey = "auralith.autoConvertMp3";
 const streamHistoryStorageKey = "auralith.streamHistory";
+const volumeStorageKey = "auralith.volume";
+const mutedStorageKey = "auralith.muted";
 const playableExtensions = new Set(["aac", "aiff", "flac", "m4a", "mkv", "mov", "mp3", "mp4", "oga", "ogg", "opus", "wav", "webm"]);
 
 restorePreferences();
@@ -114,6 +121,12 @@ back20Button.addEventListener("click", () => seekBy(-20));
 back10Button.addEventListener("click", () => seekBy(-10));
 forward10Button.addEventListener("click", () => seekBy(10));
 forward20Button.addEventListener("click", () => seekBy(20));
+volumeSlider.addEventListener("input", () => {
+  setVolume(Number(volumeSlider.value) / 100);
+});
+muteButton.addEventListener("click", () => {
+  setMuted(!audio.muted);
+});
 
 clearButton.addEventListener("click", () => {
   audio.pause();
@@ -196,6 +209,10 @@ audio.addEventListener("ended", () => {
   if (playlist.length) {
     playTrack((activeIndex + 1) % playlist.length);
   }
+});
+audio.addEventListener("volumechange", () => {
+  applyOutputGain();
+  syncVolumeControls();
 });
 audio.addEventListener("error", () => {
   const track = playlist[activeIndex];
@@ -398,6 +415,14 @@ function handleKeyboardShortcuts(event) {
   if (event.code === "Space") {
     event.preventDefault();
     playButton.click();
+  } else if (event.key.toLowerCase() === "m") {
+    muteButton.click();
+  } else if (event.key === "ArrowUp") {
+    event.preventDefault();
+    setVolume(audio.volume + 0.05);
+  } else if (event.key === "ArrowDown") {
+    event.preventDefault();
+    setVolume(audio.volume - 0.05);
   } else if (event.key === "ArrowLeft") {
     event.preventDefault();
     seekBy(event.shiftKey ? -20 : -10);
@@ -606,6 +631,12 @@ function restorePreferences() {
   rememberSearches.checked = localStorage.getItem(rememberStorageKey) !== "false";
   visualizerMode.value = localStorage.getItem(visualizerModeKey) || "bars";
   autoConvertMp3.checked = localStorage.getItem(autoConvertStorageKey) !== "false";
+  const savedVolume = Number(localStorage.getItem(volumeStorageKey));
+  const nextVolume = Number.isFinite(savedVolume) ? clamp(savedVolume, 0, 1) : 0.8;
+  audio.volume = nextVolume;
+  audio.muted = localStorage.getItem(mutedStorageKey) === "true";
+  lastAudibleVolume = nextVolume > 0 ? nextVolume : 0.8;
+  syncVolumeControls();
 }
 
 function startVisualizer() {
@@ -617,15 +648,62 @@ function startVisualizer() {
   if (!audioContext) {
     audioContext = new AudioContext();
     analyser = audioContext.createAnalyser();
+    gainNode = audioContext.createGain();
     analyser.fftSize = 512;
     mediaSource = audioContext.createMediaElementSource(audio);
     mediaSource.connect(analyser);
-    analyser.connect(audioContext.destination);
+    analyser.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    applyOutputGain();
   }
 
   audioContext.resume();
   cancelAnimationFrame(visualizerFrame);
   drawVisualizer();
+}
+
+function setVolume(volume) {
+  const nextVolume = clamp(volume, 0, 1);
+  audio.volume = nextVolume;
+  if (nextVolume > 0) {
+    lastAudibleVolume = nextVolume;
+    audio.muted = false;
+  }
+  localStorage.setItem(volumeStorageKey, String(nextVolume));
+  localStorage.setItem(mutedStorageKey, String(audio.muted));
+  applyOutputGain();
+  syncVolumeControls();
+}
+
+function setMuted(muted) {
+  audio.muted = muted;
+  if (!muted && audio.volume === 0) {
+    audio.volume = lastAudibleVolume;
+    localStorage.setItem(volumeStorageKey, String(audio.volume));
+  }
+  localStorage.setItem(mutedStorageKey, String(audio.muted));
+  applyOutputGain();
+  syncVolumeControls();
+}
+
+function applyOutputGain() {
+  const outputGain = audio.muted ? 0 : audio.volume;
+  if (!gainNode) {
+    return;
+  }
+
+  if (audioContext) {
+    gainNode.gain.setTargetAtTime(outputGain, audioContext.currentTime, 0.015);
+  } else {
+    gainNode.gain.value = outputGain;
+  }
+}
+
+function syncVolumeControls() {
+  const percent = Math.round(audio.volume * 100);
+  volumeSlider.value = String(percent);
+  volumeValue.textContent = audio.muted ? "Muted" : `${percent}%`;
+  muteButton.textContent = audio.muted || audio.volume === 0 ? "Unmute" : "Mute";
 }
 
 function drawVisualizer() {
