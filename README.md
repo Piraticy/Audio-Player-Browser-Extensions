@@ -78,6 +78,7 @@ The Docker container serves a browser app on port `8091`.
 - Try browser-supported HLS `.m3u8` stream URLs
 - Start built-in stream presets for quick testing
 - Start verified Tanzania radio presets, including Clouds FM, East Africa Radio, Radio One Stereo, Radio Maria Tanzania, Capital Radio, Mungu Kwanza, and Radio Kwizera
+- Start verified Congo Kiswahili presets, including Radio Okapi, Watoto Radio, Radio Moto Butembo-Beni, Viunga Business Radio, and Radio Maria DR Congo
 - Remember recent streams and avoid duplicate stream rows in the playlist
 - Clone direct public downloadable media links into the playlist through the Python server
 - Download converted output files

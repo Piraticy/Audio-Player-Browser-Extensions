@@ -111,11 +111,17 @@ def check_web_app_files() -> None:
         "Capital Radio",
         "Mungu Kwanza",
         "Radio Kwizera",
+        "Congo Kiswahili",
+        "Radio Okapi",
+        "Watoto Radio",
+        "Radio Moto Butembo-Beni",
+        "Viunga Business Radio",
+        "Radio Maria DR Congo",
         "Test Streams",
         "FIP Live",
         "MP3 sample",
         "Recent Streams",
-        "/app.js?v=20260824-tanzania-radio",
+        "/app.js?v=20260824-congo-radio",
     ]
     missing_text = [text for text in required_text if text not in html]
     if missing_text:
