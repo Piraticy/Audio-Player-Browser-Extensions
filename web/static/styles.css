@@ -367,6 +367,18 @@ input::placeholder {
   gap: 8px;
 }
 
+.preset-group {
+  display: grid;
+  gap: 7px;
+}
+
+.preset-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
 .suggestions button,
 .saved-searches button,
 .stream-presets button {

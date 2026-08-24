@@ -24,6 +24,7 @@ const statusElement = document.getElementById("status");
 const youtubeSearchForm = document.getElementById("youtubeSearchForm");
 const youtubeSearchInput = document.getElementById("youtubeSearchInput");
 const youtubeStatus = document.getElementById("youtubeStatus");
+const linkCard = document.querySelector(".link-card");
 const mediaLinkForm = document.getElementById("mediaLinkForm");
 const mediaLinkInput = document.getElementById("mediaLinkInput");
 const cloneLinkButton = document.getElementById("cloneLinkButton");
@@ -179,24 +180,17 @@ mediaLinkForm.addEventListener("submit", (event) => {
   playMediaLink();
 });
 cloneLinkButton.addEventListener("click", cloneMediaLink);
-streamPresets.addEventListener("click", (event) => {
+linkCard.addEventListener("click", handleStreamShortcutClick);
+
+function handleStreamShortcutClick(event) {
   const button = event.target.closest("[data-stream-url]");
   if (!button) {
     return;
   }
 
   mediaLinkInput.value = button.dataset.streamUrl;
-  playMediaLink();
-});
-recentStreams.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-stream-url]");
-  if (!button) {
-    return;
-  }
-
-  mediaLinkInput.value = button.dataset.streamUrl;
-  playMediaLink();
-});
+  playMediaLink(button.dataset.streamName || button.textContent.trim());
+}
 
 audio.addEventListener("play", () => {
   playButton.textContent = "Pause";
@@ -286,20 +280,20 @@ function playTrack(index) {
   setStatus(`Playing ${track.name}`);
 }
 
-async function playMediaLink() {
+async function playMediaLink(preferredName = "") {
   const url = mediaLinkUrl();
   if (!url || routeHostedMusicPage(url)) {
     return;
   }
 
-  linkStatus.textContent = "Resolving online stream...";
+  linkStatus.textContent = preferredName ? `Resolving ${preferredName}...` : "Resolving online stream...";
   mediaLinkForm.querySelector("button").disabled = true;
 
   try {
     const stream = await resolveOnlineStream(url.href);
     const track = {
       kind: "stream",
-      name: stream.name || nameFromLink(stream.stream_url),
+      name: preferredName || stream.name || nameFromLink(stream.stream_url),
       type: stream.resolved ? "Resolved online stream" : "Online stream",
       size: 0,
       url: stream.playback_url || stream.stream_url,
@@ -308,7 +302,7 @@ async function playMediaLink() {
     };
     addOrPlayStream(track);
     saveRecentStream(mediaLinkInput.value.trim(), track.name);
-    linkStatus.textContent = stream.resolved ? "Resolved playlist and started local-proxy stream." : "Playing through local stream proxy.";
+    linkStatus.textContent = stream.resolved ? `Resolved playlist and started ${track.name}.` : `Playing ${track.name} through the local stream proxy.`;
   } catch (error) {
     linkStatus.textContent = error instanceof Error ? error.message : "Could not resolve this online stream.";
   } finally {
@@ -622,6 +616,7 @@ function renderRecentStreams() {
     const button = document.createElement("button");
     button.type = "button";
     button.textContent = stream.name;
+    button.dataset.streamName = stream.name;
     button.dataset.streamUrl = stream.url;
     recentStreams.append(button);
   });

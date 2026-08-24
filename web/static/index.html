@@ -111,11 +111,29 @@
             <input id="mediaLinkInput" type="url" placeholder="Paste stream URL">
             <button type="submit">Play stream</button>
           </form>
-          <div id="streamPresets" class="stream-presets" aria-label="Stream presets">
-            <button type="button" data-stream-url="https://icecast.radiofrance.fr/fip-midfi.mp3">FIP Live</button>
-            <button type="button" data-stream-url="https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3">MP3 sample</button>
+          <div class="preset-group">
+            <p class="preset-label">Tanzania Radio</p>
+            <div class="stream-presets" aria-label="Tanzania radio streams">
+              <button type="button" data-stream-name="Clouds FM" data-stream-url="http://eu6.fastcast4u.com:5306/;">Clouds FM</button>
+              <button type="button" data-stream-name="East Africa Radio" data-stream-url="https://eatv.radioca.st/stream">East Africa Radio</button>
+              <button type="button" data-stream-name="Radio One Stereo" data-stream-url="https://radioonetanzania.radioca.st/stream">Radio One Stereo</button>
+              <button type="button" data-stream-name="Radio Maria Tanzania" data-stream-url="http://dreamsiteradiocp2.com:8034/stream">Radio Maria Tanzania</button>
+              <button type="button" data-stream-name="Capital Radio" data-stream-url="https://capitalradio.radioca.st/stream">Capital Radio</button>
+              <button type="button" data-stream-name="Mungu Kwanza" data-stream-url="https://mungukwanza.radioca.st/;">Mungu Kwanza</button>
+              <button type="button" data-stream-name="Radio Kwizera" data-stream-url="https://uk4-vn.mixstream.net/:8052/;listen.mp3">Radio Kwizera</button>
+            </div>
           </div>
-          <div id="recentStreams" class="stream-presets" aria-label="Recent streams"></div>
+          <div class="preset-group">
+            <p class="preset-label">Test Streams</p>
+            <div id="streamPresets" class="stream-presets" aria-label="Stream presets">
+              <button type="button" data-stream-name="FIP Live" data-stream-url="https://icecast.radiofrance.fr/fip-midfi.mp3">FIP Live</button>
+              <button type="button" data-stream-name="MP3 sample" data-stream-url="https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3">MP3 sample</button>
+            </div>
+          </div>
+          <div class="preset-group">
+            <p class="preset-label">Recent Streams</p>
+            <div id="recentStreams" class="stream-presets" aria-label="Recent streams"></div>
+          </div>
           <button id="cloneLinkButton" type="button">Clone file link</button>
           <p id="linkStatus" class="fine-print">Use Play stream for direct MP3/AAC streams, podcasts, or .m3u/.pls radio playlists.</p>
         </section>
@@ -151,6 +169,6 @@
       </section>
     </main>
 
-    <script src="/app.js?v=20260824-volume-gain"></script>
+    <script src="/app.js?v=20260824-tanzania-radio"></script>
   </body>
 </html>
