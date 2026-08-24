@@ -26,6 +26,7 @@ const mediaLinkInput = document.getElementById("mediaLinkInput");
 const cloneLinkButton = document.getElementById("cloneLinkButton");
 const linkStatus = document.getElementById("linkStatus");
 const streamPresets = document.getElementById("streamPresets");
+const recentStreams = document.getElementById("recentStreams");
 const saveSearchButton = document.getElementById("saveSearchButton");
 const rememberSearches = document.getElementById("rememberSearches");
 const suggestionsElement = document.getElementById("suggestions");
@@ -45,10 +46,12 @@ const searchStorageKey = "audioPlayer.searches";
 const rememberStorageKey = "audioPlayer.rememberSearches";
 const visualizerModeKey = "audioPlayer.visualizerMode";
 const autoConvertStorageKey = "auralith.autoConvertMp3";
+const streamHistoryStorageKey = "auralith.streamHistory";
 const playableExtensions = new Set(["aac", "aiff", "flac", "m4a", "mkv", "mov", "mp3", "mp4", "oga", "ogg", "opus", "wav", "webm"]);
 
 restorePreferences();
 renderSavedSearches();
+renderRecentStreams();
 drawIdleVisualizer();
 
 fileInput.addEventListener("change", () => {
@@ -172,6 +175,15 @@ streamPresets.addEventListener("click", (event) => {
   mediaLinkInput.value = button.dataset.streamUrl;
   playMediaLink();
 });
+recentStreams.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-stream-url]");
+  if (!button) {
+    return;
+  }
+
+  mediaLinkInput.value = button.dataset.streamUrl;
+  playMediaLink();
+});
 
 audio.addEventListener("play", () => {
   playButton.textContent = "Pause";
@@ -274,15 +286,28 @@ async function playMediaLink() {
       type: stream.resolved ? "Resolved online stream" : "Online stream",
       size: 0,
       url: stream.playback_url || stream.stream_url,
-      sourceUrl: stream.stream_url
+      sourceUrl: stream.stream_url,
+      requestedUrl: url.href
     };
-    addPlayableFiles([track]);
+    addOrPlayStream(track);
+    saveRecentStream(mediaLinkInput.value.trim(), track.name);
     linkStatus.textContent = stream.resolved ? "Resolved playlist and started local-proxy stream." : "Playing through local stream proxy.";
   } catch (error) {
     linkStatus.textContent = error instanceof Error ? error.message : "Could not resolve this online stream.";
   } finally {
     mediaLinkForm.querySelector("button").disabled = false;
   }
+}
+
+function addOrPlayStream(track) {
+  const existingIndex = playlist.findIndex((item) => playlistKey(item) === playlistKey(track));
+  if (existingIndex >= 0) {
+    playTrack(existingIndex);
+    setStatus(`Already in playlist: ${track.name}`);
+    return;
+  }
+
+  addPlayableFiles([track]);
 }
 
 async function cloneMediaLink() {
@@ -541,6 +566,42 @@ function renderSavedSearches() {
   });
 }
 
+function saveRecentStream(url, name) {
+  const streamUrl = url.trim();
+  if (!streamUrl) {
+    return;
+  }
+
+  const streams = getRecentStreams();
+  const nextStreams = [
+    { url: streamUrl, name: name || nameFromLink(streamUrl) },
+    ...streams.filter((stream) => stream.url !== streamUrl)
+  ].slice(0, 6);
+  localStorage.setItem(streamHistoryStorageKey, JSON.stringify(nextStreams));
+  renderRecentStreams();
+}
+
+function getRecentStreams() {
+  try {
+    const streams = JSON.parse(localStorage.getItem(streamHistoryStorageKey) || "[]");
+    return Array.isArray(streams) ? streams.filter((stream) => stream?.url && stream?.name) : [];
+  } catch {
+    return [];
+  }
+}
+
+function renderRecentStreams() {
+  recentStreams.replaceChildren();
+
+  getRecentStreams().forEach((stream) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = stream.name;
+    button.dataset.streamUrl = stream.url;
+    recentStreams.append(button);
+  });
+}
+
 function restorePreferences() {
   rememberSearches.checked = localStorage.getItem(rememberStorageKey) !== "false";
   visualizerMode.value = localStorage.getItem(visualizerModeKey) || "bars";
@@ -736,6 +797,14 @@ function isPlayableFile(file) {
 
 function isLinkTrack(track) {
   return track?.kind === "link" || track?.kind === "stream";
+}
+
+function playlistKey(track) {
+  if (isLinkTrack(track)) {
+    return track.requestedUrl || track.sourceUrl || track.url;
+  }
+
+  return "";
 }
 
 function nameFromLink(url) {

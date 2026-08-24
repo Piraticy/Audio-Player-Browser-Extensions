@@ -103,7 +103,8 @@ def check_web_app_files() -> None:
         "Clone file link",
         "FIP Live",
         "MP3 sample",
-        "/app.js?v=20260823-stream-proxy",
+        "Recent streams",
+        "/app.js?v=20260824-stream-history",
     ]
     missing_text = [text for text in required_text if text not in html]
     if missing_text:
@@ -111,6 +112,9 @@ def check_web_app_files() -> None:
     required_script_text = [
         "routeHostedMusicPage",
         "resolveOnlineStream",
+        "renderRecentStreams",
+        "addOrPlayStream",
+        "requestedUrl",
         "sourceUrl",
         "streamPresets",
         "isYouTubeUrl",
