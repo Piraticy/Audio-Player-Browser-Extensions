@@ -102,6 +102,8 @@ def check_web_app_files() -> None:
         "Auto-convert",
         "trackArt",
         "trackMonogram",
+        "track-copy",
+        "studio-workbench",
         "Online Streaming",
         "Play stream",
         "Clone file link",
@@ -123,7 +125,7 @@ def check_web_app_files() -> None:
         "FIP Live",
         "MP3 sample",
         "Recent Streams",
-        "/app.js?v=20260825-console-visualizer",
+        "/app.js?v=20260825-auralith-reframe",
     ]
     missing_text = [text for text in required_text if text not in html]
     if missing_text:

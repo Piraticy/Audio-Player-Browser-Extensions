@@ -16,11 +16,11 @@
             <h1>Auralith</h1>
           </div>
           <div class="topbar-actions">
-          <label class="file-button primary-action">
-            <input id="fileInput" type="file" accept="audio/*,video/*" multiple>
-            Add files
-          </label>
-          <button id="demoButton" class="ghost-action" type="button">Try demo</button>
+            <label class="file-button primary-action">
+              <input id="fileInput" type="file" accept="audio/*,video/*" multiple>
+              Add files
+            </label>
+            <button id="demoButton" class="ghost-action" type="button">Try demo</button>
           </div>
         </header>
 
@@ -30,7 +30,7 @@
             <div id="trackMonogram" class="track-monogram" aria-hidden="true">AU</div>
             <div class="disc" aria-hidden="true"></div>
           </div>
-          <div>
+          <div class="track-copy">
             <p id="trackName" class="track-name">Choose a media file</p>
             <p id="trackMeta" class="track-meta">MP3 conversion defaults to 320 kbps.</p>
             <div class="badges" aria-label="Player capabilities">
@@ -41,29 +41,31 @@
           </div>
         </section>
 
-        <section id="dropZone" class="drop-zone">
-          <strong>Drop audio or video files here</strong>
-          <span>Local and authorized files can be converted to MP3 automatically.</span>
-        </section>
+        <div class="studio-workbench">
+          <section id="dropZone" class="drop-zone">
+            <strong>Drop audio or video files here</strong>
+            <span>Local and authorized files can be converted to MP3 automatically.</span>
+          </section>
 
-        <section class="visualizer-panel" aria-label="Audio visualizer">
-          <div class="visualizer-topline">
-            <div>
-              <p class="eyebrow">Visualizer</p>
-              <h2>Motion Studio</h2>
+          <section class="visualizer-panel" aria-label="Audio visualizer">
+            <div class="visualizer-topline">
+              <div>
+                <p class="eyebrow">Visualizer</p>
+                <h2>Motion Studio</h2>
+              </div>
+              <label>
+                Mode
+                <select id="visualizerMode">
+                  <option value="bars">Bars</option>
+                  <option value="wave">Wave</option>
+                  <option value="halo">Halo</option>
+                  <option value="off">Off</option>
+                </select>
+              </label>
             </div>
-            <label>
-              Mode
-              <select id="visualizerMode">
-                <option value="bars">Bars</option>
-                <option value="wave">Wave</option>
-                <option value="halo">Halo</option>
-                <option value="off">Off</option>
-              </select>
-            </label>
-          </div>
-          <canvas id="visualizer" width="960" height="220"></canvas>
-        </section>
+            <canvas id="visualizer" width="960" height="220"></canvas>
+          </section>
+        </div>
 
         <audio id="audio" controls></audio>
 
@@ -183,6 +185,6 @@
       </section>
     </main>
 
-    <script src="/app.js?v=20260825-console-visualizer"></script>
+    <script src="/app.js?v=20260825-auralith-reframe"></script>
   </body>
 </html>
