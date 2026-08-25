@@ -38,6 +38,7 @@ body {
 body {
   min-height: 100dvh;
   margin: 0;
+  overflow-x: hidden;
   overflow: hidden;
   background:
     linear-gradient(90deg, rgba(55, 226, 196, 0.09), transparent 26%, rgba(232, 199, 103, 0.06) 76%, transparent),
@@ -84,6 +85,7 @@ button,
   padding: 10px 14px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 12px 26px rgba(0, 0, 0, 0.18);
   transition: border-color 140ms ease, transform 140ms ease, background 140ms ease;
+  touch-action: manipulation;
 }
 
 button:hover,
@@ -577,6 +579,7 @@ select {
     linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.014)),
     rgba(8, 10, 11, 0.44);
   color: var(--text);
+  font-size: 16px;
   padding: 10px 12px;
 }
 
@@ -678,6 +681,7 @@ select {
 @media (max-width: 980px) {
   body {
     overflow: auto;
+    overflow-x: hidden;
   }
 
   .shell {
@@ -715,13 +719,32 @@ select {
 }
 
 @media (max-width: 620px) {
+  button,
+  .file-button {
+    min-height: 48px;
+    padding: 11px 12px;
+  }
+
+  input,
+  select {
+    min-height: 48px;
+  }
+
+  .shell {
+    width: 100%;
+    gap: 10px;
+    padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+  }
+
   .player-panel,
   .side-panel {
-    padding: 14px;
+    padding: 12px;
   }
 
   .topbar {
     align-items: flex-start;
+    min-height: 0;
+    padding-bottom: 10px;
   }
 
   .topbar-actions {
@@ -733,11 +756,14 @@ select {
   }
 
   h1 {
-    font-size: 34px;
+    font-size: 30px;
   }
 
   .now-playing {
-    grid-template-columns: 1fr;
+    grid-template-columns: 92px minmax(0, 1fr);
+    gap: 12px;
+    min-height: 116px;
+    padding: 12px;
   }
 
   .now-playing::after {
@@ -745,8 +771,8 @@ select {
   }
 
   .art-stage {
-    width: 100%;
-    max-width: 220px;
+    width: 92px;
+    max-width: none;
   }
 
   .track-copy {
@@ -755,7 +781,41 @@ select {
   }
 
   .track-name {
-    font-size: 24px;
+    font-size: 22px;
+    line-height: 1.05;
+  }
+
+  .track-meta,
+  .fine-print,
+  label {
+    font-size: 12px;
+  }
+
+  .badges {
+    gap: 6px;
+  }
+
+  .badges span {
+    font-size: 11px;
+    padding: 6px 8px;
+  }
+
+  .studio-workbench {
+    min-height: 258px;
+    padding: 10px;
+  }
+
+  .drop-zone {
+    min-height: 58px;
+    padding: 10px 12px;
+  }
+
+  .drop-zone strong {
+    font-size: 14px;
+  }
+
+  .drop-zone span {
+    font-size: 12px;
   }
 
   .visualizer-topline {
@@ -767,18 +827,110 @@ select {
     width: 100%;
   }
 
+  .visualizer-panel {
+    grid-template-rows: auto 128px;
+  }
+
+  canvas {
+    height: 128px;
+    min-height: 128px;
+  }
+
+  audio {
+    height: 34px;
+    min-height: 34px;
+  }
+
   .search-form {
     grid-template-columns: 1fr;
   }
 
+  .controls {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    padding-top: 10px;
+  }
+
   .controls > button {
-    flex: 1 1 84px;
+    width: 100%;
+    min-width: 0;
+    padding-right: 8px;
+    padding-left: 8px;
+  }
+
+  #previousButton,
+  #playButton,
+  #nextButton {
+    grid-column: span 1;
   }
 
   .volume-control {
+    grid-column: 1 / -1;
     width: 100%;
-    grid-template-columns: auto auto minmax(80px, 1fr) 42px;
+    grid-template-columns: auto minmax(0, 1fr) 44px;
+    gap: 8px;
     border-left: 0;
     padding-left: 0;
+  }
+
+  .volume-control button {
+    min-width: 78px;
+  }
+
+  .volume-control label {
+    display: none;
+  }
+
+  .search-card,
+  .link-card,
+  .playlist-card,
+  .converter {
+    gap: 10px;
+    margin-bottom: 14px;
+    padding-bottom: 14px;
+  }
+
+  .search-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .search-actions > * {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .stream-presets button,
+  .suggestions button,
+  .saved-searches button {
+    min-height: 38px;
+    white-space: normal;
+  }
+
+  .playlist {
+    max-height: none;
+  }
+}
+
+@media (max-width: 390px) {
+  .controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .now-playing {
+    grid-template-columns: 78px minmax(0, 1fr);
+  }
+
+  .art-stage {
+    width: 78px;
+  }
+
+  .track-name {
+    font-size: 20px;
+  }
+
+  .track-monogram {
+    font-size: 28px;
   }
 }
