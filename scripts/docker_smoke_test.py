@@ -22,6 +22,7 @@ def main() -> int:
         ("Extension JavaScript syntax", check_extension_javascript),
         ("Manifest JSON", check_manifest_json),
         ("Web app files", check_web_app_files),
+        ("Docker hosting files", check_docker_hosting_files),
         ("Vercel hosting files", check_vercel_files),
         ("FFmpeg conversion", check_ffmpeg_conversion),
     ]
@@ -233,6 +234,29 @@ def check_vercel_files() -> None:
         raise AssertionError("Vercel build did not create public/index.html")
     if "Auralith" not in public_index.read_text(encoding="utf-8"):
         raise AssertionError("Vercel build output is missing the app UI")
+
+
+def check_docker_hosting_files() -> None:
+    dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
+    if 'CMD ["python3", "web/server.py", "--host", "0.0.0.0"]' not in dockerfile:
+        raise AssertionError("Dockerfile must serve the web app by default for Docker hosting")
+    if "ffmpeg" not in dockerfile:
+        raise AssertionError("Dockerfile must install FFmpeg for hosted conversion")
+
+    server_source = (ROOT / "web" / "server.py").read_text(encoding="utf-8")
+    if 'os.environ.get("PORT", "8091")' not in server_source:
+        raise AssertionError("web/server.py must read PORT for Docker hosting platforms")
+
+    render_yaml = (ROOT / "render.yaml").read_text(encoding="utf-8")
+    required_render_text = [
+        "runtime: docker",
+        "plan: free",
+        "healthCheckPath: /health",
+        "dockerfilePath: ./Dockerfile",
+    ]
+    missing = [text for text in required_render_text if text not in render_yaml]
+    if missing:
+        raise AssertionError(f"Missing Render hosting settings: {', '.join(missing)}")
 
 
 def check_ffmpeg_conversion() -> None:

@@ -17,4 +17,6 @@ WORKDIR /app
 
 COPY . .
 
-CMD ["python3", "scripts/docker_smoke_test.py"]
+EXPOSE 8091
+
+CMD ["python3", "web/server.py", "--host", "0.0.0.0"]

@@ -50,7 +50,7 @@ Or without Compose:
 
 ```sh
 docker build -t auralith-studio:local .
-docker run --rm auralith-studio:local
+docker run --rm -p 8091:8091 auralith-studio:local
 ```
 
 The container verifies the Python app, browser-extension JavaScript, manifest JSON, and FFmpeg conversion support. The desktop UI itself should still be run on the host.
@@ -88,24 +88,20 @@ The Docker container serves a browser app on port `8091`.
 
 YouTube search is discovery-only and opens official YouTube results. Auralith Studio does not extract or convert YouTube, Audiomack, or other hosted-service pages. If one of those page URLs is pasted into Online Streaming, the app opens the official player instead of adding a broken playlist item. In-app streaming is for direct stream URLs and authorized media links, such as MP3/AAC radio streams, podcasts, `.m3u`, `.pls`, WAV, M4A, OGG, FLAC, or browser-supported video links. The clone endpoint blocks private, local, and reserved network targets and limits cloned media to 100 MB.
 
-## Free Vercel Hosting
+## Free Docker Hosting
 
-This repo includes `vercel.json` and Python serverless routes for Vercel's free Hobby hosting.
+This repo includes `render.yaml` for Render's free Docker web services.
 
-Deploy from GitHub:
+Deploy on Render:
 
-1. Open Vercel and choose New Project.
+1. Open Render and choose New Blueprint.
 2. Import `Piraticy/Audio-Player-Browser-Extensions`.
-3. Keep the detected settings from `vercel.json`.
+3. Select the `render.yaml` blueprint.
 4. Deploy.
 
-Deploy from the CLI:
+The Render deployment runs the Dockerfile, including Python and FFmpeg, so the hosted web app can use the same conversion and streaming endpoints as local Docker. Free Render services may spin down when idle and wake on the next request.
 
-```sh
-npx vercel --prod
-```
-
-Vercel hosting serves the premium web player and supports search suggestions, stream resolving, stream proxying, and direct media link cloning. FFmpeg conversion remains available in Docker/local mode because Vercel free hosting does not run this Docker container.
+Vercel configuration is still present as an optional static/serverless fallback, but Docker hosting is the recommended path for full FFmpeg conversion.
 
 ## Auralith Browser Extension
 

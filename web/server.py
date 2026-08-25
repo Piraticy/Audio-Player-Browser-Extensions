@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import ipaddress
 import json
+import os
 import shutil
 import socket
 import subprocess
@@ -531,8 +532,15 @@ def fetch_youtube_suggestions(path: str) -> dict:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", default="127.0.0.1")
-    parser.add_argument("--port", type=int, default=8091)
+    parser.add_argument("--port", type=int, default=default_port())
     return parser.parse_args()
+
+
+def default_port() -> int:
+    try:
+        return int(os.environ.get("PORT", "8091"))
+    except ValueError:
+        return 8091
 
 
 def main() -> int:

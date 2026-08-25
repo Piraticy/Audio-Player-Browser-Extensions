@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: auralith-studio
+    runtime: docker
+    plan: free
+    autoDeployTrigger: commit
+    healthCheckPath: /health
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
