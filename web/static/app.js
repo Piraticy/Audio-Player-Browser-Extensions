@@ -202,12 +202,15 @@ function handleStreamShortcutClick(event) {
 
 audio.addEventListener("play", () => {
   playButton.textContent = "Pause";
+});
+audio.addEventListener("playing", () => {
   startVisualizer();
 });
+audio.addEventListener("waiting", () => stopVisualizer());
+audio.addEventListener("stalled", () => stopVisualizer());
 audio.addEventListener("pause", () => {
   playButton.textContent = "Play";
-  cancelAnimationFrame(visualizerFrame);
-  drawIdleVisualizer();
+  stopVisualizer();
 });
 audio.addEventListener("ended", () => {
   if (playlist.length) {
@@ -744,6 +747,11 @@ function drawVisualizer() {
     return;
   }
 
+  if (!isMediaActuallyPlaying()) {
+    drawIdleVisualizer();
+    return;
+  }
+
   if (!analyser) {
     drawLiveVisualizerFallback(width, height);
     visualizerFrame = requestAnimationFrame(drawVisualizer);
@@ -972,6 +980,15 @@ function isLinkTrack(track) {
 
 function isStreamingLive() {
   return isLinkTrack(playlist[activeIndex]) && !Number.isFinite(audio.duration);
+}
+
+function isMediaActuallyPlaying() {
+  return !audio.paused && !audio.ended && audio.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA;
+}
+
+function stopVisualizer() {
+  cancelAnimationFrame(visualizerFrame);
+  drawIdleVisualizer();
 }
 
 function stationInitials(name) {
