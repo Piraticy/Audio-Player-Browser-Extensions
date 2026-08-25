@@ -88,6 +88,25 @@ The Docker container serves a browser app on port `8091`.
 
 YouTube search is discovery-only and opens official YouTube results. Auralith Studio does not extract or convert YouTube, Audiomack, or other hosted-service pages. If one of those page URLs is pasted into Online Streaming, the app opens the official player instead of adding a broken playlist item. In-app streaming is for direct stream URLs and authorized media links, such as MP3/AAC radio streams, podcasts, `.m3u`, `.pls`, WAV, M4A, OGG, FLAC, or browser-supported video links. The clone endpoint blocks private, local, and reserved network targets and limits cloned media to 100 MB.
 
+## Free Vercel Hosting
+
+This repo includes `vercel.json` and Python serverless routes for Vercel's free Hobby hosting.
+
+Deploy from GitHub:
+
+1. Open Vercel and choose New Project.
+2. Import `Piraticy/Audio-Player-Browser-Extensions`.
+3. Keep the detected settings from `vercel.json`.
+4. Deploy.
+
+Deploy from the CLI:
+
+```sh
+npx vercel --prod
+```
+
+Vercel hosting serves the premium web player and supports search suggestions, stream resolving, stream proxying, and direct media link cloning. FFmpeg conversion remains available in Docker/local mode because Vercel free hosting does not run this Docker container.
+
 ## Auralith Browser Extension
 
 A lightweight Manifest V3 browser extension for playing local audio files from a polished popup UI.

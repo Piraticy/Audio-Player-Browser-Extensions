@@ -22,6 +22,7 @@ def main() -> int:
         ("Extension JavaScript syntax", check_extension_javascript),
         ("Manifest JSON", check_manifest_json),
         ("Web app files", check_web_app_files),
+        ("Vercel hosting files", check_vercel_files),
         ("FFmpeg conversion", check_ffmpeg_conversion),
     ]
 
@@ -35,7 +36,22 @@ def main() -> int:
 
 
 def check_python_compile() -> None:
-    run(["python3", "-m", "py_compile", "desktop/audio_player_app.py", "web/server.py"])
+    run(
+        [
+            "python3",
+            "-m",
+            "py_compile",
+            "desktop/audio_player_app.py",
+            "web/server.py",
+            "scripts/build_vercel.py",
+            "api/_shared.py",
+            "api/youtube_suggestions.py",
+            "api/resolve_stream.py",
+            "api/stream.py",
+            "api/clone_link.py",
+            "api/convert.py",
+        ]
+    )
 
 
 def check_desktop_import() -> None:
@@ -191,6 +207,32 @@ def check_web_app_files() -> None:
         except ValueError:
             continue
         raise AssertionError(f"Unsafe link was not blocked: {blocked_url}")
+
+
+def check_vercel_files() -> None:
+    config = json.loads((ROOT / "vercel.json").read_text(encoding="utf-8"))
+    if config.get("buildCommand") != "python3 scripts/build_vercel.py":
+        raise AssertionError("vercel.json must use the Vercel static build script")
+    if config.get("outputDirectory") != "public":
+        raise AssertionError("vercel.json must publish the generated public directory")
+
+    destinations = {rewrite.get("destination") for rewrite in config.get("rewrites", [])}
+    expected_destinations = {
+        "/api/youtube_suggestions.py",
+        "/api/resolve_stream.py",
+        "/api/clone_link.py",
+        "/api/convert.py",
+        "/api/stream.py",
+    }
+    if not expected_destinations.issubset(destinations):
+        raise AssertionError("vercel.json must map every hosted API route")
+
+    run(["python3", "scripts/build_vercel.py"])
+    public_index = ROOT / "public" / "index.html"
+    if not public_index.exists():
+        raise AssertionError("Vercel build did not create public/index.html")
+    if "Auralith" not in public_index.read_text(encoding="utf-8"):
+        raise AssertionError("Vercel build output is missing the app UI")
 
 
 def check_ffmpeg_conversion() -> None:

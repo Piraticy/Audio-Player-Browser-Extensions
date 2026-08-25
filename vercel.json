@@ -1,0 +1,38 @@
+{
+  "buildCommand": "python3 scripts/build_vercel.py",
+  "installCommand": "",
+  "outputDirectory": "public",
+  "rewrites": [
+    {
+      "source": "/api/youtube-suggestions",
+      "destination": "/api/youtube_suggestions.py"
+    },
+    {
+      "source": "/api/resolve-stream",
+      "destination": "/api/resolve_stream.py"
+    },
+    {
+      "source": "/api/clone-link",
+      "destination": "/api/clone_link.py"
+    },
+    {
+      "source": "/api/convert",
+      "destination": "/api/convert.py"
+    },
+    {
+      "source": "/api/stream",
+      "destination": "/api/stream.py"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    }
+  ]
+}
