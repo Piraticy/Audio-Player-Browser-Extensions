@@ -482,7 +482,7 @@ def first_playlist_stream(data: str, base_url: str) -> str:
                 continue
             line = value.strip()
 
-        candidate = urllib.parse.urljoin(base_url, line)
+        candidate = line if urllib.parse.urlparse(line).scheme in {"http", "https"} else urllib.parse.urljoin(base_url, line)
         parsed = urllib.parse.urlparse(candidate)
         if parsed.scheme in {"http", "https"} and parsed.hostname:
             return candidate

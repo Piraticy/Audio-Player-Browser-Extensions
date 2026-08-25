@@ -66,7 +66,8 @@ The Docker container serves a browser app on port `8091`.
 - Skip backward or forward by 10 or 20 seconds
 - Control volume with an app-level slider and mute toggle
 - Use keyboard shortcuts: Space, ArrowLeft, ArrowRight, ArrowUp, ArrowDown, `M`, `N`, and `P`
-- Pick visualizer modes: bars, wave, halo, or off
+- Pick visualizer modes: bars, wave, halo, or off, with a live-stream fallback animation for browsers that do not expose radio samples to WebAudio
+- Keep the player view inside the viewport with compact panels and internal scrolling for long station lists
 - Convert selected local or authorized media files through FFmpeg in Docker
 - Export MP3 by default at 320 kbps
 - Search YouTube and open official results in a new tab
@@ -79,6 +80,7 @@ The Docker container serves a browser app on port `8091`.
 - Start built-in stream presets for quick testing
 - Start verified Tanzania radio presets, including Clouds FM, East Africa Radio, Radio One Stereo, Radio Maria Tanzania, Capital Radio, Mungu Kwanza, and Radio Kwizera
 - Start verified Congo Kiswahili presets, including Radio Okapi, Watoto Radio, Radio Moto Butembo-Beni, Viunga Business Radio, and Radio Maria DR Congo
+- Show station logos when public artwork is available, with automatic initials as the fallback
 - Remember recent streams and avoid duplicate stream rows in the playlist
 - Clone direct public downloadable media links into the playlist through the Python server
 - Download converted output files

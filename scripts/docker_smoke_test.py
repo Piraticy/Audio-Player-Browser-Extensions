@@ -100,6 +100,8 @@ def check_web_app_files() -> None:
         "Mute",
         "Motion Studio",
         "Auto-convert",
+        "trackArt",
+        "trackMonogram",
         "Online Streaming",
         "Play stream",
         "Clone file link",
@@ -121,7 +123,7 @@ def check_web_app_files() -> None:
         "FIP Live",
         "MP3 sample",
         "Recent Streams",
-        "/app.js?v=20260824-congo-radio",
+        "/app.js?v=20260825-art-visualizer",
     ]
     missing_text = [text for text in required_text if text not in html]
     if missing_text:
@@ -135,6 +137,9 @@ def check_web_app_files() -> None:
         "requestedUrl",
         "sourceUrl",
         "gainNode",
+        "drawLiveVisualizerFallback",
+        "stationInitials",
+        "track.artwork",
         "setVolume",
         "setMuted",
         "volumeStorageKey",
@@ -169,6 +174,8 @@ def check_web_app_files() -> None:
         raise AssertionError("M3U stream playlist parsing failed")
     if module.first_playlist_stream("[playlist]\nFile1=/live.aac\n", "https://example.com/station.pls") != "https://example.com/live.aac":
         raise AssertionError("PLS stream playlist parsing failed")
+    if module.first_playlist_stream("[playlist]\nFile1=http://example.com/;\n", "https://example.com/station.pls") != "http://example.com/;":
+        raise AssertionError("PLS stream URL punctuation was not preserved")
 
     for blocked_url in ("file:///tmp/song.mp3", "http://127.0.0.1/song.mp3", "http://localhost/song.mp3"):
         try:

@@ -20,6 +20,7 @@
 body {
   min-height: 100vh;
   margin: 0;
+  overflow: hidden;
   background:
     radial-gradient(circle at 18% 8%, rgba(47, 230, 200, 0.16), transparent 28%),
     radial-gradient(circle at 86% 86%, rgba(242, 193, 77, 0.13), transparent 30%),
@@ -57,12 +58,13 @@ button:hover,
 .shell {
   display: grid;
   width: min(1240px, calc(100vw - 36px));
-  min-height: 100vh;
+  height: 100vh;
+  min-height: 0;
   grid-template-columns: minmax(0, 1.45fr) minmax(340px, 0.75fr);
   gap: 18px;
   align-items: stretch;
   margin: 0 auto;
-  padding: 32px 0;
+  padding: 24px 0;
 }
 
 .player-panel,
@@ -77,9 +79,11 @@ button:hover,
 
 .player-panel {
   display: flex;
+  max-height: calc(100vh - 48px);
   flex-direction: column;
-  gap: 22px;
-  padding: 24px;
+  gap: 16px;
+  overflow: hidden;
+  padding: 20px;
 }
 
 .topbar,
@@ -151,17 +155,19 @@ h2 {
 
 .now-playing {
   display: grid;
-  grid-template-columns: 210px minmax(0, 1fr);
-  gap: 28px;
+  grid-template-columns: 170px minmax(0, 1fr);
+  gap: 22px;
   align-items: center;
-  margin-top: 24px;
+  margin-top: 8px;
 }
 
 .art-stage {
   display: grid;
-  width: 210px;
+  position: relative;
+  width: 170px;
   aspect-ratio: 1;
   place-items: center;
+  overflow: hidden;
   border: 1px solid rgba(245, 242, 236, 0.08);
   border-radius: 8px;
   background:
@@ -170,8 +176,35 @@ h2 {
     rgba(255, 255, 255, 0.025);
 }
 
+.track-art,
+.track-monogram {
+  position: absolute;
+  inset: 16px;
+  z-index: 2;
+}
+
+.track-art {
+  width: calc(100% - 32px);
+  height: calc(100% - 32px);
+  object-fit: contain;
+  border-radius: 8px;
+  filter: drop-shadow(0 12px 20px rgba(0, 0, 0, 0.24));
+}
+
+.track-monogram {
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 28%, rgba(245, 242, 236, 0.9), rgba(245, 242, 236, 0.32) 26%, transparent 27%),
+    conic-gradient(from 35deg, var(--accent), var(--warm), var(--accent-strong), var(--accent));
+  color: rgba(17, 19, 20, 0.9);
+  font-size: 42px;
+  font-weight: 900;
+}
+
 .disc {
-  width: 156px;
+  width: 128px;
   aspect-ratio: 1;
   border-radius: 50%;
   background:
@@ -182,9 +215,15 @@ h2 {
     0 24px 54px rgba(47, 230, 200, 0.12);
 }
 
+.track-art:not([hidden]) ~ .disc,
+.track-monogram:not([hidden]) ~ .disc {
+  opacity: 0.18;
+  transform: scale(1.18);
+}
+
 .track-name {
   overflow-wrap: anywhere;
-  font-size: 40px;
+  font-size: 34px;
   font-weight: 800;
   line-height: 1.12;
 }
@@ -256,7 +295,7 @@ audio {
 canvas {
   display: block;
   width: 100%;
-  height: 170px;
+  height: clamp(96px, 18vh, 150px);
   border: 1px solid rgba(245, 242, 236, 0.09);
   border-radius: 8px;
   background:
@@ -267,6 +306,10 @@ canvas {
 .controls {
   justify-content: flex-start;
   flex-wrap: wrap;
+}
+
+.controls > button {
+  min-width: 70px;
 }
 
 .volume-control {
@@ -294,9 +337,11 @@ canvas {
 
 .side-panel {
   display: flex;
+  max-height: calc(100vh - 48px);
   min-width: 0;
   flex-direction: column;
   gap: 18px;
+  overflow: auto;
   padding: 22px;
 }
 
@@ -403,7 +448,7 @@ input::placeholder {
 
 .playlist {
   display: grid;
-  max-height: 34vh;
+  max-height: min(24vh, 220px);
   margin: 0;
   padding: 0;
   gap: 8px;
@@ -436,7 +481,7 @@ input::placeholder {
 }
 
 .converter {
-  margin-top: auto;
+  margin-top: 0;
 }
 
 select {
@@ -452,7 +497,20 @@ select {
 
 @media (max-width: 800px) {
   .shell {
+    height: auto;
+    min-height: 100vh;
     grid-template-columns: 1fr;
+    overflow: visible;
+  }
+
+  body {
+    overflow: auto;
+  }
+
+  .player-panel,
+  .side-panel {
+    max-height: none;
+    overflow: visible;
   }
 
   .now-playing {

@@ -1,6 +1,8 @@
 const fileInput = document.getElementById("fileInput");
 const audio = document.getElementById("audio");
 const playerPanel = document.querySelector(".player-panel");
+const trackArt = document.getElementById("trackArt");
+const trackMonogram = document.getElementById("trackMonogram");
 const trackName = document.getElementById("trackName");
 const trackMeta = document.getElementById("trackMeta");
 const demoButton = document.getElementById("demoButton");
@@ -47,6 +49,7 @@ let analyser;
 let gainNode;
 let mediaSource;
 let visualizerFrame;
+let visualizerFallbackPhase = 0;
 let lastAudibleVolume = 0.8;
 const searchStorageKey = "audioPlayer.searches";
 const rememberStorageKey = "audioPlayer.rememberSearches";
@@ -132,6 +135,8 @@ muteButton.addEventListener("click", () => {
 clearButton.addEventListener("click", () => {
   audio.pause();
   audio.removeAttribute("src");
+  cancelAnimationFrame(visualizerFrame);
+  drawIdleVisualizer();
   playlist = [];
   activeIndex = -1;
   renderPlaylist();
@@ -189,7 +194,10 @@ function handleStreamShortcutClick(event) {
   }
 
   mediaLinkInput.value = button.dataset.streamUrl;
-  playMediaLink(button.dataset.streamName || button.textContent.trim());
+  playMediaLink({
+    name: button.dataset.streamName || button.textContent.trim(),
+    artwork: button.dataset.streamArt || ""
+  });
 }
 
 audio.addEventListener("play", () => {
@@ -198,6 +206,8 @@ audio.addEventListener("play", () => {
 });
 audio.addEventListener("pause", () => {
   playButton.textContent = "Play";
+  cancelAnimationFrame(visualizerFrame);
+  drawIdleVisualizer();
 });
 audio.addEventListener("ended", () => {
   if (playlist.length) {
@@ -218,6 +228,7 @@ audio.addEventListener("error", () => {
     setStatus("This file could not be played by the browser.");
   }
 });
+trackArt.addEventListener("error", () => updateTrackArt({ name: trackName.textContent }));
 document.addEventListener("keydown", handleKeyboardShortcuts);
 
 function addFiles(files) {
@@ -280,7 +291,9 @@ function playTrack(index) {
   setStatus(`Playing ${track.name}`);
 }
 
-async function playMediaLink(preferredName = "") {
+async function playMediaLink(options = {}) {
+  const preferredName = typeof options === "string" ? options : options.name || "";
+  const preferredArtwork = typeof options === "object" ? options.artwork || "" : "";
   const url = mediaLinkUrl();
   if (!url || routeHostedMusicPage(url)) {
     return;
@@ -298,10 +311,11 @@ async function playMediaLink(preferredName = "") {
       size: 0,
       url: stream.playback_url || stream.stream_url,
       sourceUrl: stream.stream_url,
-      requestedUrl: url.href
+      requestedUrl: url.href,
+      artwork: preferredArtwork || stream.artwork || ""
     };
     addOrPlayStream(track);
-    saveRecentStream(mediaLinkInput.value.trim(), track.name);
+    saveRecentStream(mediaLinkInput.value.trim(), track.name, track.artwork);
     linkStatus.textContent = stream.resolved ? `Resolved playlist and started ${track.name}.` : `Playing ${track.name} through the local stream proxy.`;
   } catch (error) {
     linkStatus.textContent = error instanceof Error ? error.message : "Could not resolve this online stream.";
@@ -585,7 +599,7 @@ function renderSavedSearches() {
   });
 }
 
-function saveRecentStream(url, name) {
+function saveRecentStream(url, name, artwork = "") {
   const streamUrl = url.trim();
   if (!streamUrl) {
     return;
@@ -593,7 +607,7 @@ function saveRecentStream(url, name) {
 
   const streams = getRecentStreams();
   const nextStreams = [
-    { url: streamUrl, name: name || nameFromLink(streamUrl) },
+    { url: streamUrl, name: name || nameFromLink(streamUrl), artwork },
     ...streams.filter((stream) => stream.url !== streamUrl)
   ].slice(0, 6);
   localStorage.setItem(streamHistoryStorageKey, JSON.stringify(nextStreams));
@@ -618,6 +632,9 @@ function renderRecentStreams() {
     button.textContent = stream.name;
     button.dataset.streamName = stream.name;
     button.dataset.streamUrl = stream.url;
+    if (stream.artwork) {
+      button.dataset.streamArt = stream.artwork;
+    }
     recentStreams.append(button);
   });
 }
@@ -641,18 +658,31 @@ function startVisualizer() {
   }
 
   if (!audioContext) {
-    audioContext = new AudioContext();
-    analyser = audioContext.createAnalyser();
-    gainNode = audioContext.createGain();
-    analyser.fftSize = 512;
-    mediaSource = audioContext.createMediaElementSource(audio);
-    mediaSource.connect(analyser);
-    analyser.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    applyOutputGain();
+    try {
+      const AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextConstructor) {
+        throw new Error("WebAudio is not available.");
+      }
+
+      audioContext = new AudioContextConstructor();
+      analyser = audioContext.createAnalyser();
+      gainNode = audioContext.createGain();
+      analyser.fftSize = 1024;
+      analyser.smoothingTimeConstant = 0.82;
+      mediaSource = audioContext.createMediaElementSource(audio);
+      mediaSource.connect(analyser);
+      analyser.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      applyOutputGain();
+    } catch {
+      analyser = null;
+      gainNode = null;
+    }
   }
 
-  audioContext.resume();
+  if (audioContext) {
+    audioContext.resume();
+  }
   cancelAnimationFrame(visualizerFrame);
   drawVisualizer();
 }
@@ -709,8 +739,14 @@ function drawVisualizer() {
 
   visualizerContext.clearRect(0, 0, width, height);
 
-  if (!analyser || mode === "off") {
+  if (mode === "off") {
     drawIdleVisualizer();
+    return;
+  }
+
+  if (!analyser) {
+    drawLiveVisualizerFallback(width, height);
+    visualizerFrame = requestAnimationFrame(drawVisualizer);
     return;
   }
 
@@ -728,12 +764,20 @@ function drawVisualizer() {
 function drawBars(width, height) {
   const data = new Uint8Array(analyser.frequencyBinCount);
   analyser.getByteFrequencyData(data);
+  const peak = Math.max(...data);
+
+  if (peak < 4 && isStreamingLive()) {
+    drawLiveVisualizerFallback(width, height);
+    return;
+  }
+
   const barCount = 54;
   const gap = 4;
   const barWidth = (width - gap * (barCount - 1)) / barCount;
+  const scale = peak > 0 ? 255 / Math.max(peak, 20) : 1;
 
   for (let index = 0; index < barCount; index += 1) {
-    const value = data[Math.floor(index * data.length / barCount)] / 255;
+    const value = clamp(data[Math.floor(index * data.length / barCount)] * scale / 255, 0, 1);
     const barHeight = Math.max(6, value * height * 0.88);
     const x = index * (barWidth + gap);
     const y = height - barHeight;
@@ -745,13 +789,22 @@ function drawBars(width, height) {
 function drawWave(width, height) {
   const data = new Uint8Array(analyser.fftSize);
   analyser.getByteTimeDomainData(data);
+  const peakDeviation = data.reduce((peak, value) => Math.max(peak, Math.abs(value - 128)), 0);
+
+  if (peakDeviation < 1 && isStreamingLive()) {
+    drawLiveVisualizerFallback(width, height);
+    return;
+  }
+
+  const visualScale = peakDeviation > 0 ? Math.min(5.2, Math.max(1, 72 / peakDeviation)) : 1;
   visualizerContext.lineWidth = 4;
   visualizerContext.strokeStyle = "rgba(47, 230, 200, 0.86)";
   visualizerContext.beginPath();
 
   data.forEach((value, index) => {
     const x = index / (data.length - 1) * width;
-    const y = value / 255 * height;
+    const normalized = clamp((value - 128) * visualScale / 128, -1, 1);
+    const y = height / 2 + normalized * height * 0.42;
     if (index === 0) {
       visualizerContext.moveTo(x, y);
     } else {
@@ -765,7 +818,13 @@ function drawWave(width, height) {
 function drawHalo(width, height) {
   const data = new Uint8Array(analyser.frequencyBinCount);
   analyser.getByteFrequencyData(data);
-  const average = data.reduce((sum, value) => sum + value, 0) / data.length / 255;
+  const peak = Math.max(...data);
+  if (peak < 4 && isStreamingLive()) {
+    drawLiveVisualizerFallback(width, height);
+    return;
+  }
+  const scale = peak > 0 ? 255 / Math.max(peak, 20) : 1;
+  const average = data.reduce((sum, value) => sum + Math.min(255, value * scale), 0) / data.length / 255;
   const radius = Math.min(width, height) * (0.18 + average * 0.22);
   const gradient = visualizerContext.createRadialGradient(width / 2, height / 2, 4, width / 2, height / 2, radius * 2.4);
 
@@ -777,6 +836,25 @@ function drawHalo(width, height) {
   visualizerContext.beginPath();
   visualizerContext.arc(width / 2, height / 2, radius * 2.2, 0, Math.PI * 2);
   visualizerContext.fill();
+}
+
+function drawLiveVisualizerFallback(width, height) {
+  visualizerFallbackPhase += 0.045;
+  const barCount = 42;
+  const gap = 5;
+  const barWidth = (width - gap * (barCount - 1)) / barCount;
+
+  visualizerContext.clearRect(0, 0, width, height);
+  for (let index = 0; index < barCount; index += 1) {
+    const wave = Math.sin(visualizerFallbackPhase + index * 0.5);
+    const pulse = Math.sin(visualizerFallbackPhase * 1.7 + index * 0.19);
+    const value = 0.28 + Math.abs(wave * 0.42 + pulse * 0.18);
+    const barHeight = Math.max(8, value * height * 0.72);
+    const x = index * (barWidth + gap);
+    const y = height / 2 - barHeight / 2;
+    visualizerContext.fillStyle = `rgba(47, ${170 + Math.floor(value * 72)}, 200, ${0.32 + value * 0.42})`;
+    visualizerContext.fillRect(x, y, barWidth, barHeight);
+  }
 }
 
 function drawIdleVisualizer() {
@@ -843,11 +921,31 @@ function updateTrackCopy(file) {
   if (!file) {
     trackName.textContent = "Choose a media file";
     trackMeta.textContent = "MP3 conversion defaults to 320 kbps.";
+    updateTrackArt(null);
     return;
   }
 
   trackName.textContent = file.name;
   trackMeta.textContent = isLinkTrack(file) ? file.type : `${file.type || "media"} / ${prettySize(file.size)}`;
+  updateTrackArt(file);
+}
+
+function updateTrackArt(file) {
+  const artwork = file?.artwork || "";
+
+  if (artwork) {
+    trackArt.src = artwork;
+    trackArt.alt = `${file.name} logo`;
+    trackArt.hidden = false;
+    trackMonogram.hidden = true;
+    return;
+  }
+
+  trackArt.removeAttribute("src");
+  trackArt.alt = "";
+  trackArt.hidden = true;
+  trackMonogram.textContent = stationInitials(file?.name || "Auralith");
+  trackMonogram.hidden = false;
 }
 
 function setStatus(message) {
@@ -870,6 +968,18 @@ function isPlayableFile(file) {
 
 function isLinkTrack(track) {
   return track?.kind === "link" || track?.kind === "stream";
+}
+
+function isStreamingLive() {
+  return isLinkTrack(playlist[activeIndex]) && !Number.isFinite(audio.duration);
+}
+
+function stationInitials(name) {
+  const words = name
+    .replace(/[^a-z0-9 ]/gi, " ")
+    .split(/\s+/)
+    .filter(Boolean);
+  return (words[0]?.[0] || "A") + (words[1]?.[0] || words[0]?.[1] || "U");
 }
 
 function playlistKey(track) {

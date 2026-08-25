@@ -24,6 +24,8 @@
 
         <section class="now-playing">
           <div class="art-stage">
+            <img id="trackArt" class="track-art" alt="" hidden>
+            <div id="trackMonogram" class="track-monogram" aria-hidden="true">AU</div>
             <div class="disc" aria-hidden="true"></div>
           </div>
           <div>
@@ -114,23 +116,23 @@
           <div class="preset-group">
             <p class="preset-label">Tanzania Radio</p>
             <div class="stream-presets" aria-label="Tanzania radio streams">
-              <button type="button" data-stream-name="Clouds FM" data-stream-url="http://eu6.fastcast4u.com:5306/;">Clouds FM</button>
+              <button type="button" data-stream-name="Clouds FM" data-stream-art="https://cloudsmedia.co.tz/build/assets/clouds_icon-4199f5a8.png" data-stream-url="http://eu6.fastcast4u.com:5306/;">Clouds FM</button>
               <button type="button" data-stream-name="East Africa Radio" data-stream-url="https://eatv.radioca.st/stream">East Africa Radio</button>
               <button type="button" data-stream-name="Radio One Stereo" data-stream-url="https://radioonetanzania.radioca.st/stream">Radio One Stereo</button>
               <button type="button" data-stream-name="Radio Maria Tanzania" data-stream-url="http://dreamsiteradiocp2.com:8034/stream">Radio Maria Tanzania</button>
               <button type="button" data-stream-name="Capital Radio" data-stream-url="https://capitalradio.radioca.st/stream">Capital Radio</button>
-              <button type="button" data-stream-name="Mungu Kwanza" data-stream-url="https://mungukwanza.radioca.st/;">Mungu Kwanza</button>
-              <button type="button" data-stream-name="Radio Kwizera" data-stream-url="https://uk4-vn.mixstream.net/:8052/;listen.mp3">Radio Kwizera</button>
+              <button type="button" data-stream-name="Mungu Kwanza" data-stream-art="https://mungukwanza.com/wp-content/uploads/2023/12/cropped-Mungu-Kwanza-Logo.png" data-stream-url="https://mungukwanza.radioca.st/;">Mungu Kwanza</button>
+              <button type="button" data-stream-name="Radio Kwizera" data-stream-art="https://radiokwizera.co.tz/wp-content/uploads/2026/02/cropped-RadioKwizeraLogo.png" data-stream-url="https://uk4-vn.mixstream.net/:8052/;listen.mp3">Radio Kwizera</button>
             </div>
           </div>
           <div class="preset-group">
             <p class="preset-label">Congo Kiswahili</p>
             <div class="stream-presets" aria-label="Congo Kiswahili radio streams">
-              <button type="button" data-stream-name="Radio Okapi" data-stream-url="http://rs1.radiostreamer.com:8000/;">Radio Okapi</button>
+              <button type="button" data-stream-name="Radio Okapi" data-stream-art="https://www.radiookapi.net/sites/default/files/logo-radiookapi-254-92.png" data-stream-url="http://rs1.radiostreamer.com:8000/listen.pls">Radio Okapi</button>
               <button type="button" data-stream-name="Watoto Radio" data-stream-url="https://stream.zeno.fm/xwx18us91k8uv">Watoto Radio</button>
               <button type="button" data-stream-name="Radio Moto Butembo-Beni" data-stream-url="https://radio4.pro-fhi.net/live/RadioMotoButemboBeni">Radio Moto Butembo-Beni</button>
               <button type="button" data-stream-name="Viunga Business Radio" data-stream-url="https://stream.zeno.fm/r6vaqx5zbg0uv">Viunga Business Radio</button>
-              <button type="button" data-stream-name="Radio Maria DR Congo" data-stream-url="http://dreamsiteradiocp.com:8116/stream">Radio Maria DR Congo</button>
+              <button type="button" data-stream-name="Radio Maria DR Congo" data-stream-art="http://www.radiomaria.cd/favicon.ico" data-stream-url="http://dreamsiteradiocp.com:8116/stream">Radio Maria DR Congo</button>
             </div>
           </div>
           <div class="preset-group">
@@ -179,6 +181,6 @@
       </section>
     </main>
 
-    <script src="/app.js?v=20260824-congo-radio"></script>
+    <script src="/app.js?v=20260825-art-visualizer"></script>
   </body>
 </html>
