@@ -66,8 +66,8 @@ The Docker container serves a browser app on port `8091`.
 - Skip backward or forward by 10 or 20 seconds
 - Control volume with an app-level slider and mute toggle
 - Use keyboard shortcuts: Space, ArrowLeft, ArrowRight, ArrowUp, ArrowDown, `M`, `N`, and `P`
-- Pick visualizer modes: bars, wave, halo, or off, with a live-stream fallback animation for browsers that do not expose radio samples to WebAudio
-- Keep the player view inside the viewport with compact panels and internal scrolling for long station lists
+- Pick visualizer modes: bars, wave, halo, or off, with mode-specific live-stream fallback animation for browsers that do not expose radio samples to WebAudio
+- Use a premium broadcast-console layout that keeps the player inside the viewport with compact panels and internal scrolling for long station lists
 - Convert selected local or authorized media files through FFmpeg in Docker
 - Export MP3 by default at 320 kbps
 - Search YouTube and open official results in a new tab

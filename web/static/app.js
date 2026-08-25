@@ -50,6 +50,7 @@ let gainNode;
 let mediaSource;
 let visualizerFrame;
 let visualizerFallbackPhase = 0;
+let streamPlaybackStarted = false;
 let lastAudibleVolume = 0.8;
 const searchStorageKey = "audioPlayer.searches";
 const rememberStorageKey = "audioPlayer.rememberSearches";
@@ -135,8 +136,8 @@ muteButton.addEventListener("click", () => {
 clearButton.addEventListener("click", () => {
   audio.pause();
   audio.removeAttribute("src");
-  cancelAnimationFrame(visualizerFrame);
-  drawIdleVisualizer();
+  streamPlaybackStarted = false;
+  stopVisualizer();
   playlist = [];
   activeIndex = -1;
   renderPlaylist();
@@ -155,7 +156,13 @@ rememberSearches.addEventListener("change", () => {
 visualizerMode.addEventListener("change", () => {
   localStorage.setItem(visualizerModeKey, visualizerMode.value);
   if (visualizerMode.value === "off") {
-    cancelAnimationFrame(visualizerFrame);
+    stopVisualizer();
+    return;
+  }
+
+  if (isMediaActuallyPlaying()) {
+    startVisualizer();
+  } else {
     drawIdleVisualizer();
   }
 });
@@ -204,15 +211,18 @@ audio.addEventListener("play", () => {
   playButton.textContent = "Pause";
 });
 audio.addEventListener("playing", () => {
+  streamPlaybackStarted = true;
   startVisualizer();
 });
-audio.addEventListener("waiting", () => stopVisualizer());
-audio.addEventListener("stalled", () => stopVisualizer());
+audio.addEventListener("waiting", () => handleStreamInterruption());
+audio.addEventListener("stalled", () => handleStreamInterruption());
 audio.addEventListener("pause", () => {
   playButton.textContent = "Play";
+  streamPlaybackStarted = false;
   stopVisualizer();
 });
 audio.addEventListener("ended", () => {
+  streamPlaybackStarted = false;
   if (playlist.length) {
     playTrack((activeIndex + 1) % playlist.length);
   }
@@ -284,6 +294,8 @@ function playTrack(index) {
     URL.revokeObjectURL(audio.src);
   }
 
+  streamPlaybackStarted = false;
+  stopVisualizer();
   activeIndex = index;
   audio.src = isLinkTrack(track) ? track.url : URL.createObjectURL(track);
   audio.play().catch(() => {
@@ -753,7 +765,7 @@ function drawVisualizer() {
   }
 
   if (!analyser) {
-    drawLiveVisualizerFallback(width, height);
+    drawLiveVisualizerFallback(width, height, mode);
     visualizerFrame = requestAnimationFrame(drawVisualizer);
     return;
   }
@@ -775,7 +787,7 @@ function drawBars(width, height) {
   const peak = Math.max(...data);
 
   if (peak < 4 && isStreamingLive()) {
-    drawLiveVisualizerFallback(width, height);
+    drawLiveVisualizerFallback(width, height, visualizerMode.value);
     return;
   }
 
@@ -800,7 +812,7 @@ function drawWave(width, height) {
   const peakDeviation = data.reduce((peak, value) => Math.max(peak, Math.abs(value - 128)), 0);
 
   if (peakDeviation < 1 && isStreamingLive()) {
-    drawLiveVisualizerFallback(width, height);
+    drawLiveVisualizerFallback(width, height, visualizerMode.value);
     return;
   }
 
@@ -828,7 +840,7 @@ function drawHalo(width, height) {
   analyser.getByteFrequencyData(data);
   const peak = Math.max(...data);
   if (peak < 4 && isStreamingLive()) {
-    drawLiveVisualizerFallback(width, height);
+    drawLiveVisualizerFallback(width, height, visualizerMode.value);
     return;
   }
   const scale = peak > 0 ? 255 / Math.max(peak, 20) : 1;
@@ -846,8 +858,23 @@ function drawHalo(width, height) {
   visualizerContext.fill();
 }
 
-function drawLiveVisualizerFallback(width, height) {
+function drawLiveVisualizerFallback(width, height, mode) {
   visualizerFallbackPhase += 0.045;
+
+  if (mode === "wave") {
+    drawFallbackWave(width, height);
+    return;
+  }
+
+  if (mode === "halo") {
+    drawFallbackHalo(width, height);
+    return;
+  }
+
+  drawFallbackBars(width, height);
+}
+
+function drawFallbackBars(width, height) {
   const barCount = 42;
   const gap = 5;
   const barWidth = (width - gap * (barCount - 1)) / barCount;
@@ -863,6 +890,56 @@ function drawLiveVisualizerFallback(width, height) {
     visualizerContext.fillStyle = `rgba(47, ${170 + Math.floor(value * 72)}, 200, ${0.32 + value * 0.42})`;
     visualizerContext.fillRect(x, y, barWidth, barHeight);
   }
+}
+
+function drawFallbackWave(width, height) {
+  const pointCount = 96;
+  const gradient = visualizerContext.createLinearGradient(0, 0, width, 0);
+  gradient.addColorStop(0, "rgba(93, 140, 255, 0.78)");
+  gradient.addColorStop(0.5, "rgba(47, 230, 200, 0.95)");
+  gradient.addColorStop(1, "rgba(242, 193, 77, 0.8)");
+
+  visualizerContext.clearRect(0, 0, width, height);
+  visualizerContext.lineWidth = 4;
+  visualizerContext.strokeStyle = gradient;
+  visualizerContext.beginPath();
+
+  for (let index = 0; index < pointCount; index += 1) {
+    const progress = index / (pointCount - 1);
+    const carrier = Math.sin(progress * Math.PI * 8 + visualizerFallbackPhase * 2.6);
+    const shimmer = Math.sin(progress * Math.PI * 17 - visualizerFallbackPhase * 1.4);
+    const y = height / 2 + (carrier * 0.28 + shimmer * 0.08) * height;
+    const x = progress * width;
+    if (index === 0) {
+      visualizerContext.moveTo(x, y);
+    } else {
+      visualizerContext.lineTo(x, y);
+    }
+  }
+
+  visualizerContext.stroke();
+}
+
+function drawFallbackHalo(width, height) {
+  const pulse = 0.5 + Math.sin(visualizerFallbackPhase * 2.4) * 0.5;
+  const radius = Math.min(width, height) * (0.2 + pulse * 0.14);
+  const gradient = visualizerContext.createRadialGradient(width / 2, height / 2, 4, width / 2, height / 2, radius * 2.6);
+
+  visualizerContext.clearRect(0, 0, width, height);
+  gradient.addColorStop(0, "rgba(245, 242, 236, 0.92)");
+  gradient.addColorStop(0.28, "rgba(47, 230, 200, 0.64)");
+  gradient.addColorStop(0.68, "rgba(93, 140, 255, 0.24)");
+  gradient.addColorStop(1, "rgba(242, 193, 77, 0)");
+  visualizerContext.fillStyle = gradient;
+  visualizerContext.beginPath();
+  visualizerContext.arc(width / 2, height / 2, radius * 2.15, 0, Math.PI * 2);
+  visualizerContext.fill();
+
+  visualizerContext.strokeStyle = `rgba(47, 230, 200, ${0.18 + pulse * 0.36})`;
+  visualizerContext.lineWidth = 3;
+  visualizerContext.beginPath();
+  visualizerContext.arc(width / 2, height / 2, radius, 0, Math.PI * 2);
+  visualizerContext.stroke();
 }
 
 function drawIdleVisualizer() {
@@ -983,7 +1060,13 @@ function isStreamingLive() {
 }
 
 function isMediaActuallyPlaying() {
-  return !audio.paused && !audio.ended && audio.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA;
+  return !audio.paused && !audio.ended && (streamPlaybackStarted || audio.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA);
+}
+
+function handleStreamInterruption() {
+  if (!streamPlaybackStarted) {
+    stopVisualizer();
+  }
 }
 
 function stopVisualizer() {

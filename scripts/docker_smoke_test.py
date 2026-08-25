@@ -123,7 +123,7 @@ def check_web_app_files() -> None:
         "FIP Live",
         "MP3 sample",
         "Recent Streams",
-        "/app.js?v=20260825-visualizer-ready",
+        "/app.js?v=20260825-console-visualizer",
     ]
     missing_text = [text for text in required_text if text not in html]
     if missing_text:
@@ -138,6 +138,10 @@ def check_web_app_files() -> None:
         "sourceUrl",
         "gainNode",
         "drawLiveVisualizerFallback",
+        "drawFallbackBars",
+        "drawFallbackWave",
+        "drawFallbackHalo",
+        "streamPlaybackStarted",
         "isMediaActuallyPlaying",
         "stopVisualizer",
         "stationInitials",
